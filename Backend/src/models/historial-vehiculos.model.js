@@ -16,19 +16,19 @@ async function getById(id) {
 }
 
 async function create(data) {
-  const { id_vehiculo, id_orden_servicio, descripcion, fecha } = data;
+  const { id_vehiculo, descripcion, fecha } = data;
   const [result] = await pool.query(
-    `INSERT INTO ${TABLE} (id_vehiculo, id_orden_servicio, descripcion, fecha) VALUES (?, ?, ?, ?)`,
-    [id_vehiculo, id_orden_servicio, descripcion, fecha]
+    `INSERT INTO ${TABLE} (id_vehiculo, descripcion, fecha) VALUES (?, ?, ?)`,
+    [id_vehiculo, descripcion, fecha]
   );
   return getById(result.insertId);
 }
 
 async function update(id, data) {
-  const { id_vehiculo, id_orden_servicio, descripcion, fecha } = data;
+  const { id_vehiculo, descripcion, fecha } = data;
   await pool.query(
-    `UPDATE ${TABLE} SET id_vehiculo = ?, id_orden_servicio = ?, descripcion = ?, fecha = ? WHERE ${PK} = ?`,
-    [id_vehiculo, id_orden_servicio, descripcion, fecha, id]
+    `UPDATE ${TABLE} SET id_vehiculo = ?, descripcion = ?, fecha = ? WHERE ${PK} = ?`,
+    [id_vehiculo, descripcion, fecha, id]
   );
   return getById(id);
 }

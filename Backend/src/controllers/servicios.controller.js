@@ -1,4 +1,5 @@
 const ServicioModel = require('../models/servicios.model');
+const { uploadServicioImage } = require('../services/cloudinary.service');
 
 async function getAll(req, res, next) {
   try {
@@ -17,14 +18,18 @@ async function getById(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const row = await ServicioModel.create(req.body);
+    const data = { ...req.body };
+    if (req.file) data.foto = await uploadServicioImage(req.file);
+    const row = await ServicioModel.create(data);
     res.status(201).json(row);
   } catch (err) { next(err); }
 }
 
 async function update(req, res, next) {
   try {
-    const row = await ServicioModel.update(req.params.id, req.body);
+    const data = { ...req.body };
+    if (req.file) data.foto = await uploadServicioImage(req.file);
+    const row = await ServicioModel.update(req.params.id, data);
     if (!row) return res.status(404).json({ message: 'No encontrado' });
     res.json(row);
   } catch (err) { next(err); }

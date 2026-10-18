@@ -1,0 +1,63 @@
+/* Oculta la barra de scroll nativa donde se usa una barra propia (CustomScrollbar) */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mantiene una apariencia consistente en las barras nativas restantes. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(100 116 139 / 0.65) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139 / 0.65);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139 / 0.9);
+  background-clip: content-box;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+table th,
+table td {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  vertical-align: middle;
+}
+
+table th:first-child,
+table td:first-child {
+  padding-left: 0.5rem;
+}
+
+table th:last-child,
+table td:last-child {
+  padding-right: 0.5rem;
+}
+
+table tbody tr + tr td {
+  border-top: 1px solid var(--border);
+}

@@ -13,13 +13,14 @@ async function getAll() {
 
 async function getClientes() {
   const [rows] = await pool.query(
-    `SELECT u.*
+    `SELECT u.*,
+            (SELECT COUNT(*) FROM vehiculos v WHERE v.id_usuario = u.${PK}) AS vehiculos,
+            (SELECT MAX(v.fecha_venta) FROM venta v WHERE v.id_usuario = u.${PK}) AS ultima_visita
        FROM ${TABLE} u
-      WHERE EXISTS (
-        SELECT 1
-          FROM venta v
-         WHERE v.id_usuario = u.${PK}
-      )`
+       LEFT JOIN roles r ON r.id_rol = u.id_rol
+      WHERE u.id_rol IS NULL
+         OR LOWER(TRIM(r.nombre)) IN ('cliente', 'cliente web', 'usuario', 'usuario web', 'client')
+      ORDER BY u.nombre, u.apellido`
   );
   return rows;
 }
@@ -30,11 +31,11 @@ async function getById(id) {
 }
 
 async function create(data) {
-  const { nombre, apellido, numero_documento, tipo_documento, fecha_registro, email, contraseña, telefono, estado, id_rol } = data;
+  const { nombre, apellido, numero_documento, tipo_documento, fecha_registro, email, contraseña, telefono, direccion, estado, id_rol } = data;
   const contraseñaHash = contraseña ? await bcrypt.hash(contraseña, 10) : null;
   const [result] = await pool.query(
-    `INSERT INTO ${TABLE} (nombre, apellido, numero_documento, tipo_documento, fecha_registro, email, contraseña, telefono, estado, id_rol) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [nombre, apellido, numero_documento, tipo_documento, fecha_registro, email, contraseñaHash, telefono, estado, id_rol]
+    `INSERT INTO ${TABLE} (nombre, apellido, numero_documento, tipo_documento, fecha_registro, email, contraseña, telefono, direccion, estado, id_rol) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [nombre, apellido, numero_documento, tipo_documento, fecha_registro, email, contraseñaHash, telefono, direccion, estado, id_rol]
   );
   return getById(result.insertId);
 }
@@ -48,6 +49,7 @@ async function update(id, data) {
     'fecha_registro',
     'email',
     'telefono',
+    'direccion',
     'estado',
     'id_rol',
   ];

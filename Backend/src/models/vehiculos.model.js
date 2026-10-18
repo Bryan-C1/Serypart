@@ -6,29 +6,52 @@ const TABLE = 'vehiculos';
 const PK = 'id_vehiculo';
 
 async function getAll() {
-  const [rows] = await pool.query(`SELECT * FROM ${TABLE}`);
+  const [rows] = await pool.query(
+    `SELECT v.*, m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
+            c.nombre AS cliente_nombre, c.apellido AS cliente_apellido
+       FROM ${TABLE} v
+       LEFT JOIN marca m ON m.id_marca = v.id_marca
+       LEFT JOIN modelo md ON md.id_modelo = v.id_modelo
+       LEFT JOIN tipo_vehiculo tv ON tv.id_tipo_vehiculo = v.id_tipo_vehiculo
+       LEFT JOIN clientes c ON c.id_cliente = v.id_cliente
+      ORDER BY v.${PK} DESC`
+  );
   return rows;
 }
 
 async function getById(id) {
-  const [rows] = await pool.query(`SELECT * FROM ${TABLE} WHERE ${PK} = ?`, [id]);
+  const [rows] = await pool.query(
+    `SELECT v.*, m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
+            c.nombre AS cliente_nombre, c.apellido AS cliente_apellido
+       FROM ${TABLE} v
+       LEFT JOIN marca m ON m.id_marca = v.id_marca
+       LEFT JOIN modelo md ON md.id_modelo = v.id_modelo
+       LEFT JOIN tipo_vehiculo tv ON tv.id_tipo_vehiculo = v.id_tipo_vehiculo
+       LEFT JOIN clientes c ON c.id_cliente = v.id_cliente
+      WHERE v.${PK} = ?`,
+    [id]
+  );
   return rows[0] || null;
 }
 
 async function create(data) {
-  const { id_usuario, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro } = data;
+  const { id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro } = data;
+  const [clients] = await pool.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
+  if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
   const [result] = await pool.query(
-    `INSERT INTO ${TABLE} (id_usuario, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id_usuario, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro]
+    `INSERT INTO ${TABLE} (id_usuario, id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [clients[0].id_usuario, id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro]
   );
   return getById(result.insertId);
 }
 
 async function update(id, data) {
-  const { id_usuario, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro } = data;
+  const { id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro } = data;
+  const [clients] = await pool.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
+  if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
   await pool.query(
-    `UPDATE ${TABLE} SET id_usuario = ?, placa = ?, id_marca = ?, id_modelo = ?, anio = ?, color = ?, id_tipo_vehiculo = ?, estado = ?, fecha_registro = ? WHERE ${PK} = ?`,
-    [id_usuario, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro, id]
+    `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, placa = ?, id_marca = ?, id_modelo = ?, anio = ?, color = ?, id_tipo_vehiculo = ?, estado = ?, fecha_registro = ? WHERE ${PK} = ?`,
+    [clients[0].id_usuario, id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro, id]
   );
   return getById(id);
 }
