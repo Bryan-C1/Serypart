@@ -14,7 +14,6 @@ export function FormMecanico({ formData, setFormData }) {
         <div>
           <label className="block text-sm font-medium mb-2">Tipo de Documento</label>
           <SearchableSelect value={formData.tipoDocumento} onChange={field("tipoDocumento")} className={inputCls}>
-            <option value="V">Venezolano</option>
             <option value="CC">Cédula Ciudadanía</option>
             <option value="PA">Pasaporte</option>
             <option value="PPT">PPT</option>
