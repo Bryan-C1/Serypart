@@ -56,7 +56,7 @@ export default function ClientesPage() {
         </div>
         <button
           onClick={handleNuevo}
-          className="flex items-center gap-2 px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors"
         >
           <Plus className="w-5 h-5" />
           Nuevo Cliente
