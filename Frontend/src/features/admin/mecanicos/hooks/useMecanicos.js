@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { initialMecanicos, emptyForm } from "../services/mecanicosData";
+import { initialMecanicos, emptyForm, formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
 
 const itemsPerPage = 10;
 
@@ -88,8 +88,9 @@ export function useMecanicos() {
 
   const handleGuardarNuevo = () => {
     if (!formData.nombre.trim()) return;
+    const horarios = normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad);
     const newId = Math.max(...mecanicos.map((m) => m.id)) + 1;
-    setMecanicos([...mecanicos, { ...formData, id: newId }]);
+    setMecanicos([...mecanicos, { ...formData, id: newId, horariosPorDia: horarios, horarioDisponibilidad: formatHorariosPorDia(horarios) }]);
     setShowModal(false);
   };
 
@@ -104,7 +105,8 @@ export function useMecanicos() {
 
   const handleGuardarEdicion = () => {
     if (!selectedMecanico || !formData.nombre.trim()) return;
-    setMecanicos(mecanicos.map((m) => (m.id === selectedMecanico.id ? { ...formData, estado: m.estado === "anulado" ? "anulado" : formData.estado, id: m.id } : m)));
+    const horarios = normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad);
+    setMecanicos(mecanicos.map((m) => (m.id === selectedMecanico.id ? { ...formData, estado: m.estado === "anulado" ? "anulado" : formData.estado, id: m.id, horariosPorDia: horarios, horarioDisponibilidad: formatHorariosPorDia(horarios) } : m)));
     setShowEditModal(false);
   };
 

@@ -8,7 +8,7 @@ import { ModalWrapper } from "../components/ModalWrapper";
 import { ModalFooter } from "../components/ModalFooter";
 import { FormMecanico } from "../components/FormMecanico";
 import { DetailField } from "../components/DetailField";
-import { estadoConfig } from "../services/mecanicosData";
+import { estadoConfig, formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
 
 export default function MecanicosPage() {
   const {
@@ -90,7 +90,7 @@ export default function MecanicosPage() {
               <DetailField label="Email" value={selectedMecanico.email} />
               <DetailField label="Teléfono" value={selectedMecanico.telefono} />
               <DetailField label="Especialidad" value={selectedMecanico.especialidad} />
-              <DetailField label="Horario de disponibilidad" value={selectedMecanico.horarioDisponibilidad || "—"} />
+              <DetailField label="Horario de disponibilidad" value={selectedMecanico.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(selectedMecanico.horariosPorDia)) || "—"} />
               <DetailField label="Estado" value={estadoConfig[selectedMecanico.estado].label} />
             </div>
           </div>

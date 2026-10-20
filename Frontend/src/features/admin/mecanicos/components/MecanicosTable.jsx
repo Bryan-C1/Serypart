@@ -1,5 +1,6 @@
 import { Phone, Eye, Edit, Ban } from "lucide-react";
 import { activeInactiveStatusOptions, annulledStatusOption, EntityStatusSelect } from "../../components/EntityStatusSelect";
+import { formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
 
 export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEditar, onAnular }) {
   const mechanicStatusOptions = [
@@ -41,7 +42,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
                   </div>
                 </td>
                 <td className="py-4 text-sm">{m.direccion || "—"}</td>
-                <td className="py-4 text-sm">{m.horarioDisponibilidad || "—"}</td>
+                <td className="py-4 text-sm">{m.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(m.horariosPorDia)) || "—"}</td>
                 <td className="py-4">
                   <div onClick={(event) => event.stopPropagation()}>
                     <EntityStatusSelect
