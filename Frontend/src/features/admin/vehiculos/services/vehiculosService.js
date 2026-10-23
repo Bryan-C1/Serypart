@@ -29,7 +29,7 @@ function fromApi(vehiculo) {
   };
 }
 
-function toApi(vehiculo) {
+function toApi(vehiculo, includeFechaRegistro = true) {
   return {
     id_cliente: Number(vehiculo.id_cliente),
     placa: vehiculo.placa,
@@ -39,7 +39,9 @@ function toApi(vehiculo) {
     color: vehiculo.color || "",
     id_tipo_vehiculo: Number(vehiculo.id_tipo_vehiculo),
     estado: vehiculo.estado,
-    fecha_registro: vehiculo.fecha_registro || new Date().toISOString().slice(0, 10),
+    ...(includeFechaRegistro && {
+      fecha_registro: vehiculo.fecha_registro || new Date().toISOString().slice(0, 10),
+    }),
   };
 }
 
@@ -86,6 +88,6 @@ export async function createVehiculo(vehiculo) {
 export async function updateVehiculo(id, vehiculo) {
   return fromApi(await apiRequest(`/vehiculos/${id}`, {
     method: "PUT",
-    body: toApi(vehiculo),
+    body: toApi(vehiculo, false),
   }));
 }

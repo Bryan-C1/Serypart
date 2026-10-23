@@ -196,9 +196,14 @@ async function update(id, data) {
     const nextState = Object.prototype.hasOwnProperty.call(data, 'estado')
       ? data.estado
       : previousState;
-    if (nextState === 'anulado') {
+    if (previousState !== 'inactivo' && nextState === 'inactivo') {
+      await connection.query(
+        `UPDATE vehiculos SET estado = 'inactivo' WHERE id_cliente = ?`,
+        [id]
+      );
+    } else if (nextState === 'anulado') {
       await annulRelatedRecords(connection, id);
-    } else if (previousState === 'anulado') {
+    } else if (previousState === 'anulado' && nextState === 'activo') {
       await restoreCascade(connection, id);
     }
 
@@ -212,4 +217,48 @@ async function update(id, data) {
   return getById(id);
 }
 
-module.exports = { getAll, getById, create, update };
+async function remove(id) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [result] = await connection.query(
+      `DELETE c FROM ${TABLE} c
+        WHERE c.${PK} = ?
+          AND NOT EXISTS (
+            SELECT 1 FROM vehiculos v WHERE v.id_cliente = c.${PK}
+          )`,
+      [id]
+    );
+    if (result.affectedRows === 0) {
+      const [rows] = await connection.query(
+        `SELECT c.${PK}, EXISTS (
+           SELECT 1 FROM vehiculos v WHERE v.id_cliente = c.${PK}
+         ) AS tiene_vehiculos
+           FROM ${TABLE} c
+          WHERE c.${PK} = ?`,
+        [id]
+      );
+      if (rows.length === 0) {
+        await connection.rollback();
+        return false;
+      }
+      if (rows[0].tiene_vehiculos) {
+        const error = new Error('No se puede eliminar un cliente que tiene vehículos asociados.');
+        error.status = 409;
+        throw error;
+      }
+      await connection.rollback();
+      return false;
+    }
+    await connection.query('DELETE FROM cliente_cascade_states WHERE id_cliente = ?', [id]);
+    await connection.commit();
+    return true;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+module.exports = { getAll, getById, create, update, remove };
