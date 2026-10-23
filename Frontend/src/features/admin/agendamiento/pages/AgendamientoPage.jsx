@@ -132,6 +132,7 @@ export default function AgendamientoPage() {
         onSave={handleGuardarCita}
         initialData={selectedCita}
         initialDate={selectedDate}
+        citas={citas}
         catalogs={catalogs}
         catalogsLoading={catalogsLoading}
         catalogsError={catalogsError}

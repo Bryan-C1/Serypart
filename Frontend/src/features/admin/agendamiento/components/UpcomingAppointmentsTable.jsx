@@ -1,5 +1,6 @@
 import { EntityStatusSelect } from "../../components/EntityStatusSelect";
 import { estadoLabel, estadoClass, getServicioNombre, getVehiculoNombre, getUsuarioNombre } from "../services/agendamientoData";
+import { getMecanicoNombre } from "../../mecanicos/services/mecanicosService";
 
 const appointmentStatusOptions = ["programada", "en_proceso", "completada"].map((estado) => ({
   value: estado,
@@ -19,6 +20,7 @@ export function UpcomingAppointmentsTable({ citas, onCitaClick, onChangeStatus }
               <th className="pb-3 font-medium">Cliente</th>
               <th className="pb-3 font-medium">Vehículo</th>
               <th className="pb-3 font-medium">Servicio</th>
+              <th className="pb-3 font-medium">Mecánico</th>
               <th className="pb-3 font-medium">Observaciones</th>
               <th className="pb-3 font-medium">Estado</th>
             </tr>
@@ -41,6 +43,7 @@ export function UpcomingAppointmentsTable({ citas, onCitaClick, onChangeStatus }
                     ))}
                   </div>
                 </td>
+                <td className="py-3">{getMecanicoNombre(cita.id_mecanico)}</td>
                 <td className="py-3 text-sm">{cita.observaciones || "-"}</td>
                 <td className="py-3">
                   <div onClick={(event) => event.stopPropagation()}>

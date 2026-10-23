@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { addVehicleHistory } = require('../services/vehicle-history.service');
 
 // Modelo de la tabla `venta`: todas las queries están aquí, explícitas, sin abstracción genérica.
 
@@ -90,6 +91,26 @@ async function insertItems(connection, saleId, items) {
   }
 }
 
+async function addSaleHistory(connection, saleId, clientId, date) {
+  const [vehicles] = await connection.query(
+    `SELECT a.id_vehiculo, MIN(a.id_agendamiento) AS id_agendamiento
+       FROM agendamiento a
+      WHERE a.id_cliente = ? AND a.estado = 'completada'
+      GROUP BY a.id_vehiculo
+      ORDER BY a.id_vehiculo`,
+    [clientId]
+  );
+  for (const vehicle of vehicles) {
+    await addVehicleHistory(
+      connection,
+      vehicle.id_vehiculo,
+      `Venta #${saleId}:`,
+      `Venta #${saleId} pagada después de la cita #${vehicle.id_agendamiento}`,
+      date
+    );
+  }
+}
+
 async function getAll() {
   const [rows] = await pool.query(
     `SELECT v.*, c.nombre AS cliente_nombre, c.apellido AS cliente_apellido,
@@ -129,6 +150,7 @@ async function create(data) {
     );
     saleId = result.insertId;
     if (estado !== 'cancelada') await insertItems(connection, saleId, items);
+    if (estado === 'pagada') await addSaleHistory(connection, saleId, id_cliente, fecha_venta);
     await connection.commit();
   } catch (error) {
     await connection.rollback();
@@ -173,6 +195,9 @@ async function update(id, data) {
       [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado, id]
     );
     if (estado !== 'cancelada') await insertItems(connection, id, items);
+    if (estado === 'pagada' && existingSales[0].estado !== 'pagada') {
+      await addSaleHistory(connection, id, id_cliente, fecha_venta);
+    }
     await connection.commit();
   } catch (error) {
     await connection.rollback();

@@ -128,9 +128,9 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-2 sm:h-16 sm:gap-4 sm:px-4 lg:px-6">
       <GlobalSearch />
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-4">
         <button
           onClick={toggleTheme}
           className="p-2 hover:bg-accent rounded-lg transition-colors"
@@ -196,7 +196,7 @@ export function Header() {
           )}
         </div>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-border">
+        <div className="flex items-center gap-2 border-l border-border pl-2 sm:gap-3 sm:pl-4">
           <div ref={profileRef} className="relative">
             <button
               type="button"

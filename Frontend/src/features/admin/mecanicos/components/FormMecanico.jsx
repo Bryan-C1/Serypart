@@ -51,18 +51,16 @@ export function FormMecanico({ formData, setFormData }) {
           </SearchableSelect>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Horario de disponibilidad</label>
-          <input
-            type="text"
-            value={formData.horarioDisponibilidad}
-            onChange={field("horarioDisponibilidad")}
-            placeholder="Ej. Lunes a viernes, 8:00 a. m. - 5:00 p. m."
-            className={inputCls}
-          />
+          <label className="block text-sm font-medium mb-2">Turno</label>
+          <SearchableSelect value={formData.turno} onChange={field("turno")} className={inputCls}>
+            <option value="Mañana">Mañana</option>
+            <option value="Tarde">Tarde</option>
+            <option value="Completo">Completo</option>
+          </SearchableSelect>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Email</label>
-          <input type="email" value={formData.email} onChange={field("email")} className={inputCls} />
+          <label className="block text-sm font-medium mb-2">Email *</label>
+          <input type="email" value={formData.email} onChange={field("email")} required className={inputCls} />
         </div>
         <div>
           <label className="block text-sm font-medium mb-2">Especialidad</label>

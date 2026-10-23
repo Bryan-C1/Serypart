@@ -3,7 +3,7 @@
 API REST para el proyecto SeryPart, consumida por la app Flutter con Clean
 Architecture (domain / data / presentation).
 
-Estructura **explícita**: cada una de las 22 tablas tiene su propio archivo
+Estructura **explícita**: cada tabla tiene su propio archivo
 de modelo, controlador y rutas — sin abstracciones genéricas, para que sea
 fácil de leer y de explicar tabla por tabla.
 
@@ -17,6 +17,14 @@ cp .env.example .env
 
 Edita `.env` con tus datos de conexión (usa `serypart.sql` para crear la
 base de datos e importar las tablas).
+
+Después, ejecuta las migraciones pendientes en orden. Para habilitar
+asignaciones de mecánicos en citas, aplica
+`migrations/006_asignar_mecanicos_agendamiento.sql` y
+`migrations/007_registrar_historial_servicios.sql`. La migración 007 llena
+el historial con citas completadas y ventas pagadas que ocurrieron después
+de una cita completada. La tabla `mecanicos` existente conserva su relación
+con `usuarios`.
 
 ## 2. Ejecutar
 
@@ -36,7 +44,7 @@ src/
   models/<tabla>.model.js    -> queries SQL de esa tabla (getAll, getById, create, update, remove)
   controllers/<tabla>.controller.js -> recibe req/res y llama al modelo
   routes/<tabla>.routes.js   -> define los 5 endpoints de esa tabla
-  routes/index.js            -> monta las 22 rutas + /auth
+  routes/index.js            -> monta las rutas + /auth
   middlewares/
     auth.middleware.js       -> valida el JWT
     error.middleware.js      -> maneja errores
@@ -70,6 +78,9 @@ En `usuarios`, `roles`, `compras`, `ventas`, `proveedores`,
 `detalle-compra` y `detalle-venta` el GET también pide token, por ser datos
 sensibles o administrativos. Los nombres exactos de ruta de cada tabla están
 en `src/routes/index.js`.
+
+El módulo de mecánicos está disponible en `/api/mecanicos` (GET, GET por ID,
+POST, PUT y DELETE); todas sus rutas requieren autenticación.
 
 `usuarios` nunca devuelve el campo `contraseña` en las respuestas.
 

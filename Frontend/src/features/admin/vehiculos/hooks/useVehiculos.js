@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { emptyForm, guardarVehiculos } from "../services/vehiculosData";
-import { getClientes } from "../../clientes/services/clientesService";
+import { getClientesActivos } from "../../clientes/services/clientesService";
 import { createVehiculo, getTiposVehiculo, getVehiculos, updateVehiculo } from "../services/vehiculosService";
 
 export function useVehiculos() {
@@ -34,7 +34,7 @@ export function useVehiculos() {
     setUsuariosLoading(true);
     setUsuariosError("");
     try {
-      const clients = await getClientes();
+      const clients = await getClientesActivos();
       setUsuarios(clients.map((client) => ({
         id_cliente: client.id,
         nombre: [client.nombre, client.apellido].filter(Boolean).join(" "),
