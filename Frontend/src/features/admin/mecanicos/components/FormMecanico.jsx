@@ -111,6 +111,23 @@ export function FormMecanico({ formData, setFormData }) {
           <input type="email" value={formData.email} onChange={field("email")} className={inputCls} />
         </div>
         <div>
+          <label className="block text-sm font-medium mb-2">Estado</label>
+          <SearchableSelect value={formData.estado} onChange={field("estado")} searchable={false} className={inputCls}>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+            <option value="vacaciones">Vacaciones</option>
+            {formData.estado === "anulado" && <option value="anulado" disabled>Anulado</option>}
+          </SearchableSelect>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Turno</label>
+          <SearchableSelect value={formData.turno} onChange={field("turno")} className={inputCls}>
+            <option value="Mañana">Mañana</option>
+            <option value="Tarde">Tarde</option>
+            <option value="Completo">Completo</option>
+          </SearchableSelect>
+        </div>
+        <div>
           <label className="block text-sm font-medium mb-2">Especialidad</label>
           <SearchableSelect value={formData.especialidad} onChange={field("especialidad")} className={inputCls}>
             {especialidades.map((e) => (

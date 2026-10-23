@@ -7,13 +7,15 @@ const PK = 'id_vehiculo';
 
 async function getAll() {
   const [rows] = await pool.query(
-    `SELECT v.*, m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
+    `SELECT v.*, COALESCE(v.id_cliente, cliente_usuario.id_cliente) AS id_cliente_catalogo,
+            m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
             c.nombre AS cliente_nombre, c.apellido AS cliente_apellido
        FROM ${TABLE} v
        LEFT JOIN marca m ON m.id_marca = v.id_marca
        LEFT JOIN modelo md ON md.id_modelo = v.id_modelo
        LEFT JOIN tipo_vehiculo tv ON tv.id_tipo_vehiculo = v.id_tipo_vehiculo
        LEFT JOIN clientes c ON c.id_cliente = v.id_cliente
+       LEFT JOIN clientes cliente_usuario ON cliente_usuario.id_usuario = v.id_usuario
       ORDER BY v.${PK} DESC`
   );
   return rows;
@@ -21,13 +23,15 @@ async function getAll() {
 
 async function getById(id) {
   const [rows] = await pool.query(
-    `SELECT v.*, m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
+    `SELECT v.*, COALESCE(v.id_cliente, cliente_usuario.id_cliente) AS id_cliente_catalogo,
+            m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
             c.nombre AS cliente_nombre, c.apellido AS cliente_apellido
        FROM ${TABLE} v
        LEFT JOIN marca m ON m.id_marca = v.id_marca
        LEFT JOIN modelo md ON md.id_modelo = v.id_modelo
        LEFT JOIN tipo_vehiculo tv ON tv.id_tipo_vehiculo = v.id_tipo_vehiculo
        LEFT JOIN clientes c ON c.id_cliente = v.id_cliente
+       LEFT JOIN clientes cliente_usuario ON cliente_usuario.id_usuario = v.id_usuario
       WHERE v.${PK} = ?`,
     [id]
   );

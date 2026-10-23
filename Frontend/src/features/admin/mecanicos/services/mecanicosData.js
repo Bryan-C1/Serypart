@@ -117,7 +117,7 @@ export const initialMecanicos = [
 
 export const especialidades = ["Motor", "Transmisión", "Frenos", "Electricidad", "Suspensión", "Carrocería", "General"];
 export const emptyForm = {
-  nombre: "", apellido: "", tipoDocumento: "V", numeroDocumento: "", direccion: "", email: "", telefono: "", estado: "activo", cedula: "", especialidad: "General", horarioDisponibilidad: "", horariosPorDia: {},
+  nombre: "", apellido: "", tipoDocumento: "V", numeroDocumento: "", direccion: "", email: "", telefono: "", estado: "activo", cedula: "", especialidad: "General", turno: "Completo", horarioDisponibilidad: "", horariosPorDia: {},
   calificacion: 5.0, notas: "",
 };
 

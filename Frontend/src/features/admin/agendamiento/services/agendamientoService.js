@@ -1,6 +1,7 @@
 import { apiRequest } from "../../../../shared/services/api";
-import { getClientes } from "../../clientes/services/clientesService";
+import { getClientesActivos } from "../../clientes/services/clientesService";
 import { getServicios } from "../../servicios/services/serviciosService";
+import { getMecanicos } from "../../mecanicos/services/mecanicosService";
 
 export const CITAS_UPDATED_EVENT = "serypart-citas-updated";
 
@@ -31,6 +32,7 @@ function fromApi(cita) {
     id_vehiculo: Number(cita.id_vehiculo),
     id_usuario: cita.id_usuario == null ? null : Number(cita.id_usuario),
     id_cliente: Number(cita.id_cliente),
+    id_mecanico: cita.id_mecanico == null ? null : Number(cita.id_mecanico),
     fecha_cita: normalizeDate(cita.fecha_cita),
     hora_cita: String(cita.hora_cita || "").slice(0, 5),
     servicios: servicios.length
@@ -57,27 +59,27 @@ export async function getCitas() {
 }
 
 export async function getAgendamientoCatalogs() {
-  const [clientes, vehiculos, servicios] = await Promise.all([
-    getClientes(),
+  const [clientes, vehiculos, servicios, mecanicos] = await Promise.all([
+    getClientesActivos(),
     apiRequest("/vehiculos"),
     getServicios(),
+    getMecanicos(),
   ]);
   if (!Array.isArray(clientes) || !Array.isArray(vehiculos) || !Array.isArray(servicios)) {
     throw new Error("La API devolvió un formato inválido para los catálogos de agendamiento.");
   }
 
   return {
-    clientes: clientes
-      .filter((cliente) => String(cliente.estado || "").toLowerCase() !== "anulado")
-      .map((cliente) => ({
+    clientes: clientes.map((cliente) => ({
         id: Number(cliente.id_cliente),
         id_cliente: Number(cliente.id_cliente),
         nombre: [cliente.nombre, cliente.apellido].filter(Boolean).join(" "),
-      })),
+    })),
+    mecanicos,
     vehiculos: vehiculos.map((vehiculo) => ({
       ...vehiculo,
       id: Number(vehiculo.id_vehiculo),
-      id_cliente: Number(vehiculo.id_cliente),
+      id_cliente: Number(vehiculo.id_cliente_catalogo ?? vehiculo.id_cliente),
       id_usuario: vehiculo.id_usuario == null ? null : Number(vehiculo.id_usuario),
       año: Number(vehiculo.anio),
       nombre: [vehiculo.placa, vehiculo.marca, vehiculo.modelo].filter(Boolean).join(" "),
@@ -97,6 +99,7 @@ function toApi(cita, servicios) {
     servicios: serviceIds.map((id) => ({ id_servicio: id })),
     id_vehiculo: Number(cita.id_vehiculo),
     id_cliente: Number(cita.id_cliente),
+    id_mecanico: cita.id_mecanico == null || cita.id_mecanico === "" ? null : Number(cita.id_mecanico),
     fecha_cita: cita.fecha_cita,
     hora_cita: cita.hora_cita,
     estado: cita.estado,

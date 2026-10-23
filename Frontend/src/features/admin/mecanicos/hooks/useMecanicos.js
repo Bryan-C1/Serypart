@@ -1,10 +1,16 @@
-import { useState } from "react";
-import { initialMecanicos, emptyForm, formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
+import { useEffect, useRef, useState } from "react";
+import { createMecanico, getMecanicos, updateMecanico } from "../services/mecanicosService";
+import { emptyForm, formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
 
 const itemsPerPage = 10;
 
 export function useMecanicos() {
-  const [mecanicos, setMecanicos] = useState(initialMecanicos);
+  const [mecanicos, setMecanicos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const savingRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("todos");
   const [filterEspecialidad, setFilterEspecialidad] = useState("todas");
@@ -19,6 +25,40 @@ export function useMecanicos() {
 
   const [selectedMecanico, setSelectedMecanico] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+
+  const loadMecanicos = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setMecanicos(await getMecanicos());
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMecanicos();
+  }, []);
+
+  const runMutation = async (operation, showPageError = false) => {
+    if (savingRef.current) return null;
+    savingRef.current = true;
+    setSaving(true);
+    setFormError("");
+    if (showPageError) setError("");
+    try {
+      return await operation();
+    } catch (requestError) {
+      if (showPageError) setError(requestError.message);
+      else setFormError(requestError.message);
+      return null;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
 
   const filtered = mecanicos.filter((m) => {
     const matchSearch =
@@ -84,60 +124,79 @@ export function useMecanicos() {
     inactivos: mecanicos.filter((m) => m.estado === "inactivo" || m.estado === "vacaciones").length,
   };
 
-  const handleNuevo = () => { setFormData(emptyForm); setShowModal(true); };
+  const handleNuevo = () => { setFormError(""); setFormData(emptyForm); setShowModal(true); };
 
-  const handleGuardarNuevo = () => {
+  const handleGuardarNuevo = async () => {
     if (!formData.nombre.trim()) return;
     const horarios = normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad);
-    const newId = Math.max(...mecanicos.map((m) => m.id)) + 1;
-    setMecanicos([...mecanicos, { ...formData, id: newId, horariosPorDia: horarios, horarioDisponibilidad: formatHorariosPorDia(horarios) }]);
+    const created = await runMutation(() => createMecanico(formData));
+    if (!created) return;
+  setMecanicos((current) => [...current, {
+    ...created,
+    horariosPorDia: horarios,
+    horarioDisponibilidad: formatHorariosPorDia(horarios),
+  }]);
     setShowModal(false);
   };
 
   const handleVerDetalles = (m) => { setSelectedMecanico(m); setShowDetailModal(true); };
 
   const handleEditar = (m) => {
+    setFormError("");
     setSelectedMecanico(m);
-    setFormData({ ...m, apellido: m.apellido ?? "", tipoDocumento: m.tipoDocumento ?? "CC", numeroDocumento: m.numeroDocumento ?? m.cedula ?? "", notas: m.notas ?? "" });
+    setFormData({ ...m, apellido: m.apellido ?? "", tipoDocumento: m.tipoDocumento ?? "V", numeroDocumento: m.numeroDocumento ?? "", notas: m.notas ?? "" });
     setShowDetailModal(false);
     setShowEditModal(true);
   };
 
-  const handleGuardarEdicion = () => {
+  const handleGuardarEdicion = async () => {
     if (!selectedMecanico || !formData.nombre.trim()) return;
     const horarios = normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad);
-    setMecanicos(mecanicos.map((m) => (m.id === selectedMecanico.id ? { ...formData, estado: m.estado === "anulado" ? "anulado" : formData.estado, id: m.id, horariosPorDia: horarios, horarioDisponibilidad: formatHorariosPorDia(horarios) } : m)));
+    const data = { ...formData, estado: selectedMecanico.estado === "anulado" ? "anulado" : formData.estado };
+    const updated = await runMutation(() => updateMecanico(selectedMecanico.id, data));
+    if (!updated) return;
+  const updatedWithSchedule = {
+    ...updated,
+    horariosPorDia: horarios,
+    horarioDisponibilidad: formatHorariosPorDia(horarios),
+  };
+  setMecanicos((current) => current.map((m) => m.id === updated.id ? updatedWithSchedule : m));
+  setSelectedMecanico(updatedWithSchedule);
     setShowEditModal(false);
   };
 
-  const handleAnular = (m) => { setSelectedMecanico(m); setShowAnularModal(true); };
+  const handleAnular = (m) => { setFormError(""); setSelectedMecanico(m); setShowAnularModal(true); };
 
-  const handleConfirmarAnular = () => {
+  const handleConfirmarAnular = async () => {
     if (!selectedMecanico) return;
-    setMecanicos(mecanicos.map((m) => m.id === selectedMecanico.id ? { ...m, estado: "anulado" } : m));
+    const updated = await runMutation(() => updateMecanico(selectedMecanico.id, { ...selectedMecanico, estado: "anulado" }));
+    if (!updated) return;
+    setMecanicos((current) => current.map((m) => m.id === updated.id ? updated : m));
     setShowAnularModal(false);
   };
 
-  const handleToggleEstado = (m, estado) => {
+  const handleToggleEstado = async (m, estado) => {
     if (!m) return;
     if (m.estado === "anulado" && estado === "activo") {
-      handleReactivar(m);
+      await handleReactivar(m);
       return;
     }
-    setMecanicos(mecanicos.map((mec) =>
-      mec.id === m.id
-        ? { ...mec, estado: estado || (mec.estado === "activo" ? "inactivo" : "activo") }
-        : mec
-    ));
+    const updated = await runMutation(() => updateMecanico(m.id, {
+      ...m,
+      estado: estado || (m.estado === "activo" ? "inactivo" : "activo"),
+    }), true);
+    if (updated) setMecanicos((current) => current.map((mec) => mec.id === updated.id ? updated : mec));
   };
-  const handleReactivar = (m) => {
-    setMecanicos((current) => current.map((mecanico) => mecanico.id === m.id
-      ? { ...mecanico, estado: "activo" }
-      : mecanico));
+  const handleReactivar = async (m) => {
+    if (!m) return;
+    const updated = await runMutation(() => updateMecanico(m.id, { ...m, estado: "activo" }));
+    if (!updated) return;
+    setMecanicos((current) => current.map((mecanico) => mecanico.id === updated.id ? updated : mecanico));
     if (filterEstado === "anulados") setFilterEstado("todos");
     setCurrentPage(1);
   };
   const closeAll = () => {
+    setFormError("");
     setShowModal(false); setShowDetailModal(false);
     setShowEditModal(false); setShowAnularModal(false);
     setSelectedMecanico(null);
@@ -145,6 +204,7 @@ export function useMecanicos() {
 
   return {
     searchTerm, filterEstado, filterEspecialidad, showFilters, setShowFilters, sortBy,
+    loading, saving, error, formError, loadMecanicos,
     currentPage, setCurrentPage, totalPages, startIndex, endIndex,
     sortedMecanicos, paginatedMecanicos, stats,
     showModal, showDetailModal, showEditModal, showAnularModal,

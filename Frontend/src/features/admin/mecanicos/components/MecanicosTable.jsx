@@ -18,7 +18,8 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
             <th className="pb-3 font-medium">Apellido</th>
             <th className="pb-3 font-medium">Teléfono</th>
             <th className="pb-3 font-medium">Dirección</th>
-            <th className="pb-3 font-medium">Horario de disponibilidad</th>
+            <th className="pb-3 font-medium">Turno</th>
+            <th className="pb-3 font-medium">Disponibilidad</th>
             <th className="pb-3 font-medium">Estado</th>
             <th className="pb-3 font-medium text-right">Acciones</th>
           </tr>
@@ -26,7 +27,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
         <tbody className="divide-y divide-border">
           {mecanicos.length === 0 ? (
             <tr>
-              <td colSpan={9} className="py-10 text-center text-muted-foreground">No se encontraron mecánicos</td>
+              <td colSpan={10} className="py-10 text-center text-muted-foreground">No se encontraron mecánicos</td>
             </tr>
           ) : (
             mecanicos.map((m) => (
@@ -42,6 +43,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
                   </div>
                 </td>
                 <td className="py-4 text-sm">{m.direccion || "—"}</td>
+                <td className="py-4 text-sm">{m.turno || "—"}</td>
                 <td className="py-4 text-sm">{m.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(m.horariosPorDia)) || "—"}</td>
                 <td className="py-4">
                   <div onClick={(event) => event.stopPropagation()}>

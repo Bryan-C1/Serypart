@@ -13,9 +13,13 @@ import { Checkbox } from "../components/Checkbox";
 import { useForm } from "../hooks/useForm";
 import { onlyLetters, onlyPhone } from "../../../shared/utils/inputValidation";
 import { CURRENT_USER_STORAGE_KEY } from "../../../shared/utils/currentUser";
+import { apiRequest, AUTH_TOKEN_STORAGE_KEY } from "../../../shared/services/api";
+import { useState } from "react";
 
 export default function Registro() {
   const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const { values, handleChange } = useForm({
     nombreCompleto: "",
     email: "",
@@ -25,26 +29,64 @@ export default function Registro() {
     aceptaTerminos: false,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     if (values.password !== values.confirmPassword) {
-      alert("Las contraseñas no coinciden");
+      setError("Las contraseñas no coinciden.");
       return;
     }
     if (!values.aceptaTerminos) {
-      alert("Debes aceptar los términos y condiciones");
+      setError("Debes aceptar los términos y condiciones.");
       return;
     }
-    localStorage.setItem(
-      CURRENT_USER_STORAGE_KEY,
-      JSON.stringify({
-        name: values.nombreCompleto,
-        email: values.email,
-        phone: values.telefono,
-        password: values.password,
-      }),
-    );
-    navigate("/dashboard");
+
+    const telefono = values.telefono.replace(/\D/g, "");
+    if (telefono.length !== 10) {
+      setError("El teléfono debe tener exactamente 10 dígitos.");
+      return;
+    }
+
+    setSubmitting(true);
+    let cuentaCreada = false;
+    const [nombre, ...apellidoPartes] = values.nombreCompleto.trim().split(/\s+/);
+
+    try {
+      await apiRequest("/auth/register", {
+        method: "POST",
+        authenticated: false,
+        body: {
+          nombre,
+          apellido: apellidoPartes.join(" "),
+          email: values.email.trim(),
+          contraseña: values.password,
+          telefono,
+        },
+      });
+      cuentaCreada = true;
+
+      const result = await apiRequest("/auth/login", {
+        method: "POST",
+        authenticated: false,
+        body: { email: values.email.trim(), contraseña: values.password },
+      });
+
+      localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, result.token);
+      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify({
+        id_usuario: result.usuario.id_usuario,
+        name: `${result.usuario.nombre} ${result.usuario.apellido || ""}`.trim(),
+        email: result.usuario.email,
+        phone: result.usuario.telefono || "",
+        role: result.usuario.rol,
+      }));
+      navigate("/dashboard", { replace: true });
+    } catch (requestError) {
+      setError(cuentaCreada
+        ? `La cuenta fue creada, pero no se pudo iniciar sesión: ${requestError.message}`
+        : requestError.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -63,7 +105,6 @@ export default function Registro() {
             icon={User}
             value={values.nombreCompleto}
             onChange={(e) => handleChange({ target: { name: e.target.name, value: onlyLetters(e.target.value) } })}
-            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]+"
             placeholder="Juan Pérez"
             required
           />
@@ -75,8 +116,7 @@ export default function Registro() {
             icon={Phone}
             value={values.telefono}
             onChange={(e) => handleChange({ target: { name: e.target.name, value: onlyPhone(e.target.value) } })}
-            pattern="[0-9+()\s-]+"
-            placeholder="+58 412-1234567"
+            placeholder="4121234567"
             required
           />
           <TextField
@@ -134,7 +174,8 @@ export default function Registro() {
           </Link>
         </Checkbox>
 
-        <SubmitButton>Crear Cuenta</SubmitButton>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <SubmitButton disabled={submitting}>{submitting ? "Creando cuenta..." : "Crear Cuenta"}</SubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

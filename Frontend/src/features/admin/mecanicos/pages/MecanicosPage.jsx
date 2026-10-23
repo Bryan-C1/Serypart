@@ -13,6 +13,7 @@ import { estadoConfig, formatHorariosPorDia, normalizeHorariosPorDia } from "../
 export default function MecanicosPage() {
   const {
     searchTerm, filterEstado, filterEspecialidad, showFilters, setShowFilters, sortBy,
+    loading, saving, error, formError, loadMecanicos,
     currentPage, setCurrentPage, totalPages, startIndex, endIndex,
     sortedMecanicos, paginatedMecanicos, stats,
     showModal, showDetailModal, showEditModal, showAnularModal,
@@ -36,6 +37,13 @@ export default function MecanicosPage() {
         </button>
       </div>
 
+      {error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <span>{error}</span>
+          <button type="button" onClick={loadMecanicos} className="font-medium underline">Reintentar</button>
+        </div>
+      )}
+
       <StatsRow stats={stats} />
 
       <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
@@ -53,13 +61,15 @@ export default function MecanicosPage() {
           onClearFilters={clearFilters}
         />
 
-        <MecanicosTable
-          mecanicos={paginatedMecanicos}
-          onToggleEstado={handleToggleEstado}
-          onVerDetalles={handleVerDetalles}
-          onEditar={handleEditar}
-          onAnular={handleAnular}
-        />
+        {loading
+          ? <div role="status" className="py-10 text-center text-muted-foreground">Cargando mecánicos...</div>
+          : <MecanicosTable
+              mecanicos={paginatedMecanicos}
+              onToggleEstado={handleToggleEstado}
+              onVerDetalles={handleVerDetalles}
+              onEditar={handleEditar}
+              onAnular={handleAnular}
+            />}
 
         <PaginationBar
           currentPage={currentPage}
@@ -74,7 +84,8 @@ export default function MecanicosPage() {
       {showModal && (
         <ModalWrapper title="Nuevo Mecánico" onClose={closeAll}>
           <FormMecanico formData={formData} setFormData={setFormData} />
-          <ModalFooter onCancel={closeAll} onSave={handleGuardarNuevo} saveLabel="Guardar Mecánico" />
+          {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
+          <ModalFooter onCancel={closeAll} onSave={handleGuardarNuevo} saveLabel="Guardar Mecánico" disabled={saving} />
         </ModalWrapper>
       )}
 
@@ -90,6 +101,7 @@ export default function MecanicosPage() {
               <DetailField label="Email" value={selectedMecanico.email} />
               <DetailField label="Teléfono" value={selectedMecanico.telefono} />
               <DetailField label="Especialidad" value={selectedMecanico.especialidad} />
+              <DetailField label="Turno" value={selectedMecanico.turno || "—"} />
               <DetailField label="Horario de disponibilidad" value={selectedMecanico.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(selectedMecanico.horariosPorDia)) || "—"} />
               <DetailField label="Estado" value={estadoConfig[selectedMecanico.estado].label} />
             </div>
@@ -106,7 +118,8 @@ export default function MecanicosPage() {
       {showEditModal && selectedMecanico && (
         <ModalWrapper title="Editar Mecánico" onClose={closeAll}>
           <FormMecanico formData={formData} setFormData={setFormData} />
-          <ModalFooter onCancel={closeAll} onSave={handleGuardarEdicion} saveLabel="Guardar Cambios" />
+          {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
+          <ModalFooter onCancel={closeAll} onSave={handleGuardarEdicion} saveLabel="Guardar Cambios" disabled={saving} />
         </ModalWrapper>
       )}
 
@@ -119,9 +132,10 @@ export default function MecanicosPage() {
               <p className="text-sm text-muted-foreground mt-1"><strong>{selectedMecanico.nombre}</strong> se conservará con estado anulado.</p>
             </div>
           </div>
+          {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
           <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-border">
-            <button onClick={closeAll} className="px-6 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Cancelar</button>
-            <button onClick={handleConfirmarAnular} className="px-6 py-2 bg-destructive text-white rounded-lg hover:opacity-90 transition-opacity">Sí, Anular</button>
+            <button onClick={closeAll} disabled={saving} className="px-6 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50">Cancelar</button>
+            <button onClick={handleConfirmarAnular} disabled={saving} className="px-6 py-2 bg-destructive text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">{saving ? "Guardando..." : "Sí, Anular"}</button>
           </div>
         </ModalWrapper>
       )}
