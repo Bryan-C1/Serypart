@@ -6,6 +6,7 @@ import {
   getUsuarioNombre,
   getVehiculoNombre,
 } from "../services/agendamientoData";
+import { getMecanicoNombre } from "../../mecanicos/services/mecanicosService";
 
 export function CitaDetailModal({ cita, onClose, onEditar, onAnular }) {
   if (!cita) return null;
@@ -32,6 +33,7 @@ export function CitaDetailModal({ cita, onClose, onEditar, onAnular }) {
               <div className="space-y-2 text-sm">
                 <div><span className="text-muted-foreground">Fecha:</span> <span className="font-medium">{cita.fecha_cita}</span></div>
                 <div><span className="text-muted-foreground">Hora:</span> <span className="font-medium">{cita.hora_cita}</span></div>
+                <div><span className="text-muted-foreground">Mecánico:</span> <span className="font-medium">{getMecanicoNombre(cita.id_mecanico)}</span></div>
                 <div>
                   <span className="text-muted-foreground">Estado:</span>{" "}
                   <span className={`rounded-full px-2 py-1 text-xs ${estadoClass[cita.estado]}`}>

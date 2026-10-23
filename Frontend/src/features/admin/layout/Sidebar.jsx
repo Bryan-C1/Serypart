@@ -80,7 +80,7 @@ function groupContainingPath(pathname) {
 export function Sidebar() {
   const location = useLocation();
   const navRef = useRef(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => window.matchMedia("(max-width: 767px)").matches);
   const [currentUser] = useState(getCurrentUser);
   const userEmail = currentUser?.email || "admin@serypart.com";
   const [openGroups, setOpenGroups] = useState(() => {
@@ -97,9 +97,16 @@ export function Sidebar() {
     if (active) setOpenGroups([active]);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const updateCollapsedState = (event) => setIsCollapsed(event.matches);
+    mobileQuery.addEventListener("change", updateCollapsedState);
+    return () => mobileQuery.removeEventListener("change", updateCollapsedState);
+  }, []);
+
   return (
     <aside
-      className={`bg-sidebar border-r border-sidebar-border text-sidebar-foreground flex flex-col transition-all duration-300 ${
+      className={`shrink-0 bg-sidebar border-r border-sidebar-border text-sidebar-foreground flex flex-col transition-all duration-300 ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >

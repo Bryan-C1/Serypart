@@ -4,7 +4,7 @@ import { createCita, getAgendamientoCatalogs, getCitas, updateCita } from "../se
 
 export function useAgendamiento() {
   const [citas, setCitas] = useState(getCitasGuardadas);
-  const [catalogs, setCatalogs] = useState({ clientes: [], vehiculos: [], servicios: [] });
+  const [catalogs, setCatalogs] = useState({ clientes: [], vehiculos: [], servicios: [], mecanicos: [] });
   const [loading, setLoading] = useState(true);
   const [catalogsLoading, setCatalogsLoading] = useState(true);
   const [error, setError] = useState("");

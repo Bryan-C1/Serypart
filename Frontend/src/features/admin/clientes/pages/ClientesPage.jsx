@@ -48,15 +48,15 @@ export default function ClientesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold">Gestión de Clientes</h1>
+          <h1 className="text-2xl font-semibold sm:text-3xl">Gestión de Clientes</h1>
           <p className="text-muted-foreground mt-1">Administra la información de tus clientes</p>
         </div>
         <button
           onClick={handleNuevo}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors"
+          className="flex shrink-0 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground transition-colors hover:bg-secondary sm:px-4 sm:text-base"
         >
           <Plus className="w-5 h-5" />
           Nuevo Cliente
@@ -72,7 +72,7 @@ export default function ClientesPage() {
 
       <StatsRow stats={stats} />
 
-      <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+      <div className="rounded-lg border border-border bg-card p-3 shadow-sm sm:p-6">
         <SearchFilterBar
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
