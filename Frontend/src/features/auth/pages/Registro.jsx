@@ -1,5 +1,6 @@
 // src/features/Auth/pages/Registro.jsx
 import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Mail, Lock, User, Phone } from "lucide-react";
 import { AuthLayout } from "../components/AuthLayout";
 import { AuthHeading } from "../components/AuthHeading";
@@ -11,11 +12,14 @@ import { PasswordField } from "../components/PasswordField";
 import { SubmitButton } from "../components/SubmitButton";
 import { Checkbox } from "../components/Checkbox";
 import { useForm } from "../hooks/useForm";
-import { onlyLetters, onlyPhone } from "../../../shared/utils/inputValidation";
+import { onlyDigits, onlyLetters } from "../../../shared/utils/inputValidation";
 import { CURRENT_USER_STORAGE_KEY } from "../../../shared/utils/currentUser";
+import { apiRequest, AUTH_TOKEN_STORAGE_KEY } from "../../../shared/services/api";
 
 export default function Registro() {
   const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const { values, handleChange } = useForm({
     nombreCompleto: "",
     email: "",
@@ -25,26 +29,58 @@ export default function Registro() {
     aceptaTerminos: false,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (values.password !== values.confirmPassword) {
-      alert("Las contraseñas no coinciden");
+      setError("Las contraseñas no coinciden");
       return;
     }
     if (!values.aceptaTerminos) {
-      alert("Debes aceptar los términos y condiciones");
+      setError("Debes aceptar los términos y condiciones");
       return;
     }
-    localStorage.setItem(
-      CURRENT_USER_STORAGE_KEY,
-      JSON.stringify({
-        name: values.nombreCompleto,
-        email: values.email,
-        phone: values.telefono,
-        password: values.password,
-      }),
-    );
-    navigate("/dashboard");
+    setError("");
+    setSubmitting(true);
+
+    try {
+      const [nombre, ...apellidoPartes] = values.nombreCompleto.trim().split(/\s+/);
+      const email = values.email.trim();
+      const telefono = values.telefono.replace(/\D/g, "");
+      if (telefono.length !== 10) {
+        throw new Error("El teléfono debe tener exactamente 10 dígitos.");
+      }
+
+      await apiRequest("/auth/register", {
+        method: "POST",
+        authenticated: false,
+        body: {
+          nombre,
+          apellido: apellidoPartes.join(" ") || undefined,
+          email,
+          contraseña: values.password,
+          telefono,
+        },
+      });
+
+      const result = await apiRequest("/auth/login", {
+        method: "POST",
+        authenticated: false,
+        body: { email, contraseña: values.password },
+      });
+      localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, result.token);
+      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify({
+        id_usuario: result.usuario.id_usuario,
+        name: `${result.usuario.nombre} ${result.usuario.apellido || ""}`.trim(),
+        email: result.usuario.email,
+        phone: result.usuario.telefono || "",
+        role: result.usuario.rol,
+      }));
+      navigate("/dashboard", { replace: true });
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -74,9 +110,10 @@ export default function Registro() {
             label="Teléfono"
             icon={Phone}
             value={values.telefono}
-            onChange={(e) => handleChange({ target: { name: e.target.name, value: onlyPhone(e.target.value) } })}
-            pattern="[0-9+()\s-]+"
-            placeholder="+58 412-1234567"
+            onChange={(e) => handleChange({ target: { name: e.target.name, value: onlyDigits(e.target.value) } })}
+            pattern="[0-9]{10}"
+            maxLength={10}
+            placeholder="0412123456"
             required
           />
           <TextField
@@ -134,7 +171,11 @@ export default function Registro() {
           </Link>
         </Checkbox>
 
-        <SubmitButton>Crear Cuenta</SubmitButton>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
+        <SubmitButton disabled={submitting}>
+          {submitting ? "Creando cuenta..." : "Crear Cuenta"}
+        </SubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
