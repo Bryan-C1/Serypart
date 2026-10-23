@@ -6,8 +6,8 @@ import { SearchableSelect } from "../../../../shared/ui/searchable-select";
 
 const emptyForm = { id_vehiculo: "", id_cliente: "", fecha_cita: "", hora_cita: "", estado: "programada", observaciones: "" };
 
-export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, catalogs, catalogsLoading, catalogsError, onRefreshCatalogs, saving }) {
-  const [form, setForm] = useState(emptyForm);
+export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, citas, catalogs, catalogsLoading, catalogsError, onRefreshCatalogs, saving }) {
+  const [form, setForm] = useState({ ...emptyForm, id_mecanico: "" });
   const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
   const [servicioActual, setServicioActual] = useState("");
   const [serviciosDisponibles, setServiciosDisponibles] = useState([]);
@@ -24,7 +24,7 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
     const serviciosIniciales = datosIniciales.servicios?.length
       ? datosIniciales.servicios
       : serviciosDisponibles.filter((servicio) => String(servicio.id) === String(datosIniciales.id_servicio));
-    setForm({ ...emptyForm, ...datosIniciales, fecha_cita: datosIniciales.fecha_cita || initialDate || "" });
+    setForm({ ...emptyForm, id_mecanico: "", ...datosIniciales, fecha_cita: datosIniciales.fecha_cita || initialDate || "" });
     setServiciosSeleccionados(serviciosIniciales);
     setServicioActual("");
     setMostrarCrearServicio(false);
@@ -99,6 +99,15 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
 
   const vehiculosCliente = vehiculos.filter((vehiculo) => String(vehiculo.id_cliente) === String(form.id_cliente));
   const vehiculoSeleccionado = vehiculos.find((vehicle) => String(vehicle.id) === String(form.id_vehiculo));
+  const mecanicosDisponibles = catalogs.mecanicos.filter((mecanico) => {
+    const ocupado = citas.some((cita) =>
+      String(cita.id_mecanico) === String(mecanico.id)
+      && String(cita.id) !== String(initialData?.id)
+      && !["completada", "cancelada"].includes(cita.estado)
+    );
+    if (ocupado) return false;
+    return mecanico.estado === "activo" || String(mecanico.id) === String(form.id_mecanico);
+  });
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -209,6 +218,14 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
               <input type="time" value={form.hora_cita} onChange={field("hora_cita")} required className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
+              <label className="block text-sm font-medium mb-2">Mecánico disponible *</label>
+              <SearchableSelect value={form.id_mecanico} onChange={field("id_mecanico")} required disabled={catalogsLoading || Boolean(catalogsError)} placeholder={catalogsLoading ? "Cargando mecánicos..." : "Seleccionar mecánico"} className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">Seleccionar mecánico</option>
+                {mecanicosDisponibles.map((mecanico) => <option key={mecanico.id} value={mecanico.id}>{mecanico.nombre} {mecanico.apellido || ""}{mecanico.estado !== "activo" ? " (asignado a esta cita)" : ""}</option>)}
+              </SearchableSelect>
+              {mecanicosDisponibles.length === 0 && <p className="mt-1 text-sm text-muted-foreground">No hay mecánicos disponibles. Completa o cancela una cita para liberar al mecánico.</p>}
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-2">Estado</label>
               <SearchableSelect value={form.estado} onChange={field("estado")} required searchable={false} className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="programada">Programada</option>
@@ -246,7 +263,7 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
           </button>
           <button
             onClick={() => reportInvalidField() && handleProgramar()}
-            disabled={saving || catalogsLoading || serviciosSeleccionados.length === 0 || !form.id_cliente || !form.id_vehiculo || !form.fecha_cita || !form.hora_cita}
+            disabled={saving || catalogsLoading || serviciosSeleccionados.length === 0 || !form.id_cliente || !form.id_vehiculo || !form.fecha_cita || !form.hora_cita || !form.id_mecanico}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Guardando..." : initialData ? "Guardar cambios" : "Programar Cita"}

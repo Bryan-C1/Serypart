@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const authRoutes = require('./auth.routes');
 const agendamientoRoutes = require('./agendamiento.routes');
+const mecanicosRoutes = require('./mecanicos.routes');
 const comprasRoutes = require('./compras.routes');
 const detalle_agendamientoRoutes = require('./detalle-agendamiento.routes');
 const detalle_compraRoutes = require('./detalle-compra.routes');
@@ -28,6 +29,7 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/agendamiento', agendamientoRoutes);
+router.use('/mecanicos', mecanicosRoutes);
 router.use('/compras', comprasRoutes);
 router.use('/detalle-agendamiento', detalle_agendamientoRoutes);
 router.use('/detalle-compra', detalle_compraRoutes);

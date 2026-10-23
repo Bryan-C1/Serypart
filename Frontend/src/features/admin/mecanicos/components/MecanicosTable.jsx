@@ -17,7 +17,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
             <th className="pb-3 font-medium">Apellido</th>
             <th className="pb-3 font-medium">Teléfono</th>
             <th className="pb-3 font-medium">Dirección</th>
-            <th className="pb-3 font-medium">Horario de disponibilidad</th>
+            <th className="pb-3 font-medium">Turno</th>
             <th className="pb-3 font-medium">Estado</th>
             <th className="pb-3 font-medium text-right">Acciones</th>
           </tr>
@@ -41,7 +41,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
                   </div>
                 </td>
                 <td className="py-4 text-sm">{m.direccion || "—"}</td>
-                <td className="py-4 text-sm">{m.horarioDisponibilidad || "—"}</td>
+                <td className="py-4 text-sm">{m.turno || "—"}</td>
                 <td className="py-4">
                   <div onClick={(event) => event.stopPropagation()}>
                     <EntityStatusSelect

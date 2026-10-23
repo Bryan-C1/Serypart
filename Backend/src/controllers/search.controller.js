@@ -4,13 +4,16 @@ const searchTargets = [
   {
     type: 'clientes',
     label: 'Cliente',
-    sql: `SELECT u.id_usuario AS id,
-                 CONCAT_WS(' ', u.nombre, u.apellido) AS title,
-                 CONCAT_WS(' · ', NULLIF(u.email, ''), NULLIF(u.telefono, '')) AS subtitle,
-                 CONCAT_WS(' ', u.nombre, u.apellido, u.email, u.telefono, u.numero_documento) AS searchable
-            FROM usuarios u
-           WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.email, u.telefono, u.numero_documento) LIKE ?
-           ORDER BY u.nombre
+    sql: `SELECT c.id_cliente AS id,
+                 CONCAT_WS(' ', c.nombre, c.apellido) AS title,
+                 CONCAT_WS(' · ', NULLIF(c.email, ''), NULLIF(c.telefono, '')) AS subtitle,
+                 CONCAT_WS(' ', c.nombre, c.apellido, c.email, c.telefono,
+                           c.numero_documento, c.tipo_documento) AS searchable
+            FROM clientes c
+           WHERE LOWER(TRIM(COALESCE(c.estado, ''))) <> 'anulado'
+             AND CONCAT_WS(' ', c.nombre, c.apellido, c.email, c.telefono,
+                           c.numero_documento, c.tipo_documento) LIKE ?
+           ORDER BY c.nombre
            LIMIT 8`,
   },
   {
@@ -57,6 +60,21 @@ const searchTargets = [
             FROM proveedor
            WHERE CONCAT_WS(' ', nombre_empresa, nombre_cliente, nit, email, telefono, direccion) LIKE ?
            ORDER BY nombre_empresa
+           LIMIT 8`,
+  },
+  {
+    type: 'mecanicos',
+    label: 'Mecánico',
+    sql: `SELECT m.id_mecanico AS id,
+                 CONCAT_WS(' ', u.nombre, u.apellido) AS title,
+                 CONCAT_WS(' · ', NULLIF(m.especialidad, ''), NULLIF(u.email, ''), NULLIF(u.telefono, '')) AS subtitle,
+                 CONCAT_WS(' ', u.nombre, u.apellido, u.tipo_documento, u.numero_documento,
+                           u.email, u.telefono, m.especialidad, m.turno, u.estado) AS searchable
+            FROM mecanicos m
+            JOIN usuarios u ON u.id_usuario = m.id_usuario
+           WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.tipo_documento, u.numero_documento,
+                           u.email, u.telefono, m.especialidad, m.turno, u.estado) LIKE ?
+           ORDER BY u.nombre, u.apellido
            LIMIT 8`,
   },
   {
@@ -114,6 +132,12 @@ const detailQueries = {
   servicios: 'SELECT * FROM servicios WHERE id_servicio = ?',
   repuestos: 'SELECT * FROM repuestos WHERE id_repuesto = ?',
   proveedores: 'SELECT * FROM proveedor WHERE id_proveedor = ?',
+  mecanicos: `SELECT m.id_mecanico, m.id_usuario, m.especialidad, m.turno,
+                     u.nombre, u.apellido, u.tipo_documento, u.numero_documento,
+                     u.fecha_registro, u.email, u.telefono, u.estado, u.direccion
+                FROM mecanicos m
+                JOIN usuarios u ON u.id_usuario = m.id_usuario
+               WHERE m.id_mecanico = ?`,
   citas: `SELECT a.*, CONCAT_WS(' ', u.nombre, u.apellido) AS cliente, v.placa,
                  s.nombre AS servicio
             FROM agendamiento a
@@ -159,15 +183,13 @@ async function search(req, res, next) {
 async function getClientDetails(req, res, next) {
   try {
     const id = req.params.id;
-    const [users] = await pool.query(
-      `SELECT u.id_usuario, u.nombre, u.apellido, u.numero_documento, u.tipo_documento,
-              u.fecha_registro, u.email, u.telefono, u.estado, r.nombre AS rol
-         FROM usuarios u
-         LEFT JOIN roles r ON r.id_rol = u.id_rol
-        WHERE u.id_usuario = ?`,
+    const [clients] = await pool.query(
+      `SELECT c.*, 'Cliente' AS rol
+         FROM clientes c
+        WHERE c.id_cliente = ?`,
       [id]
     );
-    if (!users.length) return res.status(404).json({ message: 'Cliente no encontrado.' });
+    if (!clients.length) return res.status(404).json({ message: 'Cliente no encontrado.' });
 
     const [vehicles] = await pool.query(
       `SELECT v.*, m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo
@@ -175,9 +197,9 @@ async function getClientDetails(req, res, next) {
          LEFT JOIN marca m ON m.id_marca = v.id_marca
          LEFT JOIN modelo md ON md.id_modelo = v.id_modelo
          LEFT JOIN tipo_vehiculo tv ON tv.id_tipo_vehiculo = v.id_tipo_vehiculo
-        WHERE v.id_usuario = ?
+        WHERE v.id_cliente = ? OR v.id_usuario = ?
         ORDER BY v.id_vehiculo DESC`,
-      [id]
+      [id, clients[0].id_usuario || -1]
     );
     const [appointments] = await pool.query(
       `SELECT a.id_agendamiento, a.fecha_cita, a.hora_cita, a.estado, a.observaciones,
@@ -188,19 +210,19 @@ async function getClientDetails(req, res, next) {
          LEFT JOIN servicios s ON s.id_servicio = a.id_servicio
          LEFT JOIN detalle_agendamiento da ON da.id_agendamiento = a.id_agendamiento
          LEFT JOIN servicios sd ON sd.id_servicio = da.id_servicio
-        WHERE a.id_usuario = ?
+        WHERE a.id_cliente = ? OR a.id_usuario = ?
         GROUP BY a.id_agendamiento, a.fecha_cita, a.hora_cita, a.estado,
                  a.observaciones, v.id_vehiculo, v.placa
         ORDER BY a.fecha_cita DESC, a.hora_cita DESC`,
-      [id]
+      [id, clients[0].id_usuario || -1]
     );
     const [sales] = await pool.query(
       `SELECT v.id_venta, v.fecha_venta, v.total, v.estado, mp.nombre AS metodo_pago
          FROM venta v
          LEFT JOIN metodo_pago mp ON mp.id_metodo_pago = v.id_metodo_pago
-        WHERE v.id_usuario = ?
+        WHERE v.id_cliente = ? OR v.id_usuario = ?
         ORDER BY v.fecha_venta DESC, v.id_venta DESC`,
-      [id]
+      [id, clients[0].id_usuario || -1]
     );
 
     let vehicleHistory = [];
@@ -231,7 +253,7 @@ async function getClientDetails(req, res, next) {
     }));
 
     res.json({
-      cliente: users[0],
+      cliente: clients[0],
       vehiculos: vehicles,
       citas: appointments,
       ventas: salesWithItems,

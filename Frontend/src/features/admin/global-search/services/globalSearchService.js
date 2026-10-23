@@ -11,7 +11,6 @@ import { initialVentas } from "../../ventas/services/ventasData";
 import { initialRepuestos } from "../../repuestos/services/repuestosData";
 import { initialProveedores } from "../../proveedores/services/proveedoresData";
 import { initialCompras } from "../../compras/services/comprasData";
-import { initialMecanicos } from "../../mecanicos/services/mecanicosData";
 import { apiRequest } from "../../../../shared/services/api";
 
 const fixtureGroups = [
@@ -102,16 +101,6 @@ const fixtureGroups = [
       id: item.id_compra,
       title: `Compra #${item.id_compra}`,
       subtitle: `Proveedor #${item.id_proveedor} · ${item.fecha_compra} · $${item.total} · ${item.estado}`,
-      details: item,
-    })),
-  },
-  {
-    type: "mecanicos",
-    label: "Mecánico",
-    items: initialMecanicos.map((item) => ({
-      id: item.id,
-      title: `${item.nombre} ${item.apellido}`,
-      subtitle: `${item.especialidad} · ${item.email} · ${item.telefono}`,
       details: item,
     })),
   },

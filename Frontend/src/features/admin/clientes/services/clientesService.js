@@ -41,6 +41,11 @@ export async function getClientes() {
   return rows.map(fromApi);
 }
 
+export async function getClientesActivos() {
+  const clientes = await getClientes();
+  return clientes.filter((cliente) => String(cliente.estado || "").trim().toLowerCase() !== "anulado");
+}
+
 export async function createCliente(cliente) {
   const created = await apiRequest("/clientes", {
     method: "POST",

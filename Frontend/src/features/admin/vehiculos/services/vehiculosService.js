@@ -15,7 +15,7 @@ function fromApi(vehiculo) {
   return {
     ...vehiculo,
     id: Number(vehiculo.id_vehiculo),
-    id_cliente: Number(vehiculo.id_cliente),
+    id_cliente: Number(vehiculo.id_cliente_catalogo ?? vehiculo.id_cliente),
     id_usuario: vehiculo.id_usuario == null ? null : Number(vehiculo.id_usuario),
     id_marca: Number(vehiculo.id_marca),
     id_modelo: Number(vehiculo.id_modelo),
