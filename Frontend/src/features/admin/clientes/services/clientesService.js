@@ -60,3 +60,7 @@ export async function updateCliente(id, cliente) {
     body: toApi(cliente),
   }));
 }
+
+export async function deleteCliente(id) {
+  await apiRequest(`/clientes/${id}`, { method: "DELETE" });
+}

@@ -50,12 +50,12 @@ async function create(data) {
 }
 
 async function update(id, data) {
-  const { id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro } = data;
+  const { id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado } = data;
   const [clients] = await pool.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
   if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
   await pool.query(
-    `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, placa = ?, id_marca = ?, id_modelo = ?, anio = ?, color = ?, id_tipo_vehiculo = ?, estado = ?, fecha_registro = ? WHERE ${PK} = ?`,
-    [clients[0].id_usuario, id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro, id]
+    `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, placa = ?, id_marca = ?, id_modelo = ?, anio = ?, color = ?, id_tipo_vehiculo = ?, estado = ? WHERE ${PK} = ?`,
+    [clients[0].id_usuario, id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, id]
   );
   return getById(id);
 }

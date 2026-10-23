@@ -163,7 +163,7 @@ async function create(data) {
 
 async function update(id, data) {
   const { id_cliente, fecha_venta, total, id_metodo_pago, estado } = data;
-  const items = getRepuestoItems(data);
+  const items = estado === 'cancelada' ? [] : getRepuestoItems(data);
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -197,6 +197,42 @@ async function update(id, data) {
     if (estado !== 'cancelada') await insertItems(connection, id, items);
     if (estado === 'pagada' && existingSales[0].estado !== 'pagada') {
       await addSaleHistory(connection, id, id_cliente, fecha_venta);
+    }
+    if (estado === 'cancelada') {
+      if (existingSales[0].estado !== 'cancelada') {
+        const cantidadesPorRepuesto = new Map();
+        for (const item of existingItems) {
+          cantidadesPorRepuesto.set(
+            item.id_repuesto,
+            (cantidadesPorRepuesto.get(item.id_repuesto) || 0) + Number(item.cantidad)
+          );
+        }
+        for (const [idRepuesto, cantidad] of cantidadesPorRepuesto) {
+          await connection.query(
+            'UPDATE repuestos SET stock = stock + ? WHERE id_repuesto = ?',
+            [cantidad, idRepuesto]
+          );
+        }
+      }
+      await connection.query(
+        `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, fecha_venta = ?, total = ?, id_metodo_pago = ?, estado = ? WHERE ${PK} = ?`,
+        [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado, id]
+      );
+    } else {
+      if (existingSales[0].estado !== 'cancelada') {
+        for (const item of existingItems) {
+          await connection.query(
+            'UPDATE repuestos SET stock = stock + ? WHERE id_repuesto = ?',
+            [item.cantidad, item.id_repuesto]
+          );
+        }
+      }
+      await connection.query('DELETE FROM detalle_venta WHERE id_venta = ?', [id]);
+      await connection.query(
+        `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, fecha_venta = ?, total = ?, id_metodo_pago = ?, estado = ? WHERE ${PK} = ?`,
+        [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado, id]
+      );
+      await insertItems(connection, id, items);
     }
     await connection.commit();
   } catch (error) {
