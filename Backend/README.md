@@ -24,7 +24,9 @@ asignaciones de mecánicos en citas, aplica
 `migrations/007_registrar_historial_servicios.sql`. La migración 007 llena
 el historial con citas completadas y ventas pagadas que ocurrieron después
 de una cita completada. La tabla `mecanicos` existente conserva su relación
-con `usuarios`.
+con `usuarios`. Para guardar el horario de disponibilidad por día, aplica
+`migrations/008_horarios_disponibilidad_mecanicos.sql` en la base de datos
+antes de iniciar el servidor.
 
 ## 2. Ejecutar
 

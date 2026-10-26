@@ -2,6 +2,18 @@ import { apiRequest } from "../../../../shared/services/api";
 
 let mecanicosCache = [];
 
+function parseHorariosPorDia(value) {
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      throw new Error("La API devolvió un horario de disponibilidad inválido para un mecánico.");
+    }
+  }
+
+  return value || {};
+}
+
 function fromApi(mecanico) {
   const tipoDocumento = mecanico.tipo_documento || "V";
   const numeroDocumento = mecanico.numero_documento || "";
@@ -16,7 +28,7 @@ function fromApi(mecanico) {
     email: mecanico.email || "",
     telefono: mecanico.telefono || "",
     especialidad: mecanico.especialidad || "General",
-    turno: mecanico.turno || "Completo",
+    horariosPorDia: parseHorariosPorDia(mecanico.horarios_por_dia),
     estado: mecanico.estado || "activo",
     notas: mecanico.notas || "",
   };
@@ -32,7 +44,7 @@ function toApi(mecanico) {
     email: mecanico.email,
     telefono: mecanico.telefono,
     especialidad: mecanico.especialidad,
-    turno: mecanico.turno,
+    horarios_por_dia: mecanico.horariosPorDia || {},
     estado: mecanico.estado,
     notas: mecanico.notas,
   };

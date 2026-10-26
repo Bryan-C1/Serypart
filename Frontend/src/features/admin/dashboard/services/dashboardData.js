@@ -16,6 +16,10 @@ export const salesData = [
   { month: "Jun", ventas: 30000 },
 ];
 
+export function getSalesByPeriod(periodo) {
+  return periodo === "todos" ? salesData : salesData.slice(-Number(periodo));
+}
+
 export const servicesData = [
   { name: "Cambio de Aceite", value: 45 },
   { name: "Frenos", value: 30 },

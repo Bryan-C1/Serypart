@@ -15,7 +15,7 @@ export default function MecanicosPage() {
     searchTerm, filterEstado, filterEspecialidad, showFilters, setShowFilters, sortBy,
     loading, saving, error, formError, loadMecanicos,
     currentPage, setCurrentPage, totalPages, startIndex, endIndex,
-    sortedMecanicos, paginatedMecanicos, stats,
+    mecanicos, sortedMecanicos, paginatedMecanicos, stats,
     showModal, showDetailModal, showEditModal, showAnularModal,
     selectedMecanico, formData, setFormData,
     handleSearchChange, handleFilterEstadoChange, handleFilterEspecialidadChange, handleSortChange, clearFilters,
@@ -83,7 +83,7 @@ export default function MecanicosPage() {
 
       {showModal && (
         <ModalWrapper title="Nuevo Mecánico" onClose={closeAll}>
-          <FormMecanico formData={formData} setFormData={setFormData} />
+          <FormMecanico formData={formData} setFormData={setFormData} mecanicos={mecanicos} />
           {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
           <ModalFooter onCancel={closeAll} onSave={handleGuardarNuevo} saveLabel="Guardar Mecánico" disabled={saving} />
         </ModalWrapper>
@@ -101,7 +101,6 @@ export default function MecanicosPage() {
               <DetailField label="Email" value={selectedMecanico.email} />
               <DetailField label="Teléfono" value={selectedMecanico.telefono} />
               <DetailField label="Especialidad" value={selectedMecanico.especialidad} />
-              <DetailField label="Turno" value={selectedMecanico.turno || "—"} />
               <DetailField label="Horario de disponibilidad" value={selectedMecanico.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(selectedMecanico.horariosPorDia)) || "—"} />
               <DetailField label="Estado" value={estadoConfig[selectedMecanico.estado].label} />
             </div>
@@ -117,7 +116,7 @@ export default function MecanicosPage() {
 
       {showEditModal && selectedMecanico && (
         <ModalWrapper title="Editar Mecánico" onClose={closeAll}>
-          <FormMecanico formData={formData} setFormData={setFormData} />
+          <FormMecanico formData={formData} setFormData={setFormData} mecanicos={mecanicos} />
           {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
           <ModalFooter onCancel={closeAll} onSave={handleGuardarEdicion} saveLabel="Guardar Cambios" disabled={saving} />
         </ModalWrapper>

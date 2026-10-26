@@ -18,7 +18,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { values, handleChange } = useForm({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const [error, setError] = useState("No fue posible conectar con el servidor. Verifica que la API esté disponible.");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -79,9 +79,9 @@ export default function Login() {
 
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <Checkbox id="remember">Recordar sesión</Checkbox>
-          <Link to="/recuperar-password" className="text-sm text-auth-primary hover:underline">
+          <Link to="/recuperar-password" className="text-sm font-medium text-[#0d6efd] transition-colors hover:text-[#0b5ed7] hover:underline">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
@@ -89,9 +89,9 @@ export default function Login() {
         <SubmitButton disabled={submitting}>{submitting ? "Iniciando sesión..." : "Iniciar Sesión"}</SubmitButton>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-6 text-center text-sm text-[#4b5563]">
         ¿No tienes cuenta?{" "}
-        <Link to="/registro" className="text-auth-primary hover:underline font-medium">
+        <Link to="/registro" className="font-medium text-[#0d6efd] transition-colors hover:text-[#0b5ed7] hover:underline">
           Regístrate aquí
         </Link>
       </p>

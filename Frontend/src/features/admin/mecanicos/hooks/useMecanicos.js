@@ -206,7 +206,7 @@ export function useMecanicos() {
     searchTerm, filterEstado, filterEspecialidad, showFilters, setShowFilters, sortBy,
     loading, saving, error, formError, loadMecanicos,
     currentPage, setCurrentPage, totalPages, startIndex, endIndex,
-    sortedMecanicos, paginatedMecanicos, stats,
+    mecanicos, sortedMecanicos, paginatedMecanicos, stats,
     showModal, showDetailModal, showEditModal, showAnularModal,
     selectedMecanico, formData, setFormData,
     handleSearchChange, handleFilterEstadoChange, handleFilterEspecialidadChange, handleSortChange, clearFilters,
