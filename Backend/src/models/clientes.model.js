@@ -3,7 +3,22 @@ const pool = require('../config/db');
 const TABLE = 'clientes';
 const PK = 'id_cliente';
 
+async function ensureClientRelationColumns(connection = pool) {
+  const tables = [
+    { table: 'vehiculos', column: 'id_cliente' },
+    { table: 'venta', column: 'id_cliente' },
+    { table: 'agendamiento', column: 'id_cliente' },
+  ];
+
+  for (const { table, column } of tables) {
+    const [columns] = await connection.query(`SHOW COLUMNS FROM ${table} LIKE ?`, [column]);
+    if (columns.length !== 0) continue;
+    await connection.query(`ALTER TABLE ${table} ADD COLUMN ${column} INT NULL`);
+  }
+}
+
 async function getAll() {
+  await ensureClientRelationColumns();
   const [rows] = await pool.query(
     `SELECT c.*,
             (SELECT COUNT(*) FROM vehiculos v WHERE v.id_cliente = c.${PK}) AS vehiculos,
@@ -20,6 +35,7 @@ async function getById(id) {
 }
 
 async function create(data) {
+  await ensureClientRelationColumns();
   const { nombre, apellido, tipo_documento, numero_documento, fecha_registro, email, telefono, direccion, estado } = data;
   const [result] = await pool.query(
     `INSERT INTO ${TABLE}

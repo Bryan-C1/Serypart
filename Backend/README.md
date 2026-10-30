@@ -19,7 +19,9 @@ Edita `.env` con tus datos de conexión (usa `serypart.sql` para crear la
 base de datos e importar las tablas).
 
 Después, ejecuta las migraciones pendientes en orden. Para habilitar
-asignaciones de mecánicos en citas, aplica
+la gestión de mecánicos, aplica `migrations/001_roles_permisos.sql`; esta
+migración agrega `roles.estado`, usado para seleccionar el rol activo al crear
+un mecánico. Para habilitar asignaciones de mecánicos en citas, aplica
 `migrations/006_asignar_mecanicos_agendamiento.sql` y
 `migrations/007_registrar_historial_servicios.sql`. La migración 007 llena
 el historial con citas completadas y ventas pagadas que ocurrieron después

@@ -6,6 +6,13 @@ const { addVehicleHistory } = require('../services/vehicle-history.service');
 const TABLE = 'agendamiento';
 const PK = 'id_agendamiento';
 
+async function ensureClientRelationColumns(connection = pool) {
+  const [columns] = await connection.query("SHOW COLUMNS FROM agendamiento LIKE 'id_cliente'");
+  if (columns.length === 0) {
+    await connection.query('ALTER TABLE agendamiento ADD COLUMN id_cliente INT NULL');
+  }
+}
+
 function getServiceIds(data) {
   const ids = (Array.isArray(data.servicios) ? data.servicios : [])
     .map((service) => Number(service.id_servicio ?? service.id))
@@ -113,6 +120,7 @@ async function withServices(rows) {
 }
 
 async function getAll() {
+  await ensureClientRelationColumns();
   const [rows] = await pool.query(
     `SELECT a.*, s.nombre AS servicio_nombre, c.nombre AS cliente_nombre,
             c.apellido AS cliente_apellido, v.placa
@@ -126,6 +134,7 @@ async function getAll() {
 }
 
 async function getById(id) {
+  await ensureClientRelationColumns();
   const [rows] = await pool.query(
     `SELECT a.*, s.nombre AS servicio_nombre, c.nombre AS cliente_nombre,
             c.apellido AS cliente_apellido, v.placa
@@ -140,6 +149,7 @@ async function getById(id) {
 }
 
 async function create(data) {
+  await ensureClientRelationColumns();
   const serviceIds = getServiceIds(data);
   const mechanicId = getMechanicId(data);
   if (serviceIds.length === 0) throw new Error('La cita debe incluir al menos un servicio.');
@@ -176,6 +186,7 @@ async function create(data) {
 }
 
 async function update(id, data) {
+  await ensureClientRelationColumns();
   const serviceIds = getServiceIds(data);
   const mechanicId = getMechanicId(data, false);
   if (serviceIds.length === 0) throw new Error('La cita debe incluir al menos un servicio.');

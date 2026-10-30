@@ -92,6 +92,7 @@ function validate(data) {
 }
 
 async function validateScheduleAvailability(connection, schedule, currentMechanicId = null) {
+  await ensureScheduleColumn(connection);
   const [mechanics] = await connection.query(
     `SELECT m.${PK} AS id_mecanico, m.horarios_por_dia
        FROM ${TABLE} m
@@ -124,7 +125,19 @@ function handleDuplicate(error) {
   throw conflict;
 }
 
+async function ensureScheduleColumn(connection = pool) {
+  const [columns] = await connection.query("SHOW COLUMNS FROM mecanicos LIKE 'horarios_por_dia'");
+  if (columns.length !== 0) return;
+
+  try {
+    await connection.query('ALTER TABLE mecanicos ADD COLUMN horarios_por_dia JSON NULL');
+  } catch (error) {
+    if (error.code !== 'ER_DUP_FIELDNAME') throw error;
+  }
+}
+
 async function getAll() {
+  await ensureScheduleColumn();
   const [rows] = await pool.query(
     `SELECT ${MECHANIC_FIELDS}
        FROM ${TABLE} m
@@ -135,6 +148,7 @@ async function getAll() {
 }
 
 async function getById(id) {
+  await ensureScheduleColumn();
   const [rows] = await pool.query(
     `SELECT ${MECHANIC_FIELDS}
        FROM ${TABLE} m
@@ -166,6 +180,7 @@ async function create(data) {
   validate(data);
   const connection = await pool.getConnection();
   try {
+    await ensureScheduleColumn(connection);
     await connection.beginTransaction();
     await validateScheduleAvailability(connection, data.horarios_por_dia || {});
     const idRol = await getMechanicRole(connection);
@@ -203,6 +218,7 @@ async function update(id, data) {
   validate(data);
   const connection = await pool.getConnection();
   try {
+    await ensureScheduleColumn(connection);
     await connection.beginTransaction();
     if (data.horarios_por_dia !== undefined) {
       await validateScheduleAvailability(connection, data.horarios_por_dia, id);

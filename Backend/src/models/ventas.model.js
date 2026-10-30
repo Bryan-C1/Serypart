@@ -6,6 +6,13 @@ const { addVehicleHistory } = require('../services/vehicle-history.service');
 const TABLE = 'venta';
 const PK = 'id_venta';
 
+async function ensureClientRelationColumns(connection = pool) {
+  const [columns] = await connection.query("SHOW COLUMNS FROM venta LIKE 'id_cliente'");
+  if (columns.length === 0) {
+    await connection.query('ALTER TABLE venta ADD COLUMN id_cliente INT NULL');
+  }
+}
+
 function getRepuestoItems(data) {
   const items = Array.isArray(data.items) ? data.items : [];
   return items
@@ -112,6 +119,7 @@ async function addSaleHistory(connection, saleId, clientId, date) {
 }
 
 async function getAll() {
+  await ensureClientRelationColumns();
   const [rows] = await pool.query(
     `SELECT v.*, c.nombre AS cliente_nombre, c.apellido AS cliente_apellido,
             dv.id_detalle_venta, dv.id_repuesto, dv.cantidad, dv.precio_unitario,
@@ -136,6 +144,7 @@ async function getById(id) {
 }
 
 async function create(data) {
+  await ensureClientRelationColumns();
   const { id_cliente, fecha_venta, total, id_metodo_pago, estado } = data;
   const items = getRepuestoItems(data);
   const connection = await pool.getConnection();
@@ -162,6 +171,7 @@ async function create(data) {
 }
 
 async function update(id, data) {
+  await ensureClientRelationColumns();
   const { id_cliente, fecha_venta, total, id_metodo_pago, estado } = data;
   const items = estado === 'cancelada' ? [] : getRepuestoItems(data);
   const connection = await pool.getConnection();

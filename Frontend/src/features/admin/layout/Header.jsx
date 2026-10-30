@@ -5,10 +5,12 @@ import { CURRENT_USER_STORAGE_KEY, getCurrentUser, getUserInitials } from "../..
 import { apiRequest, AUTH_TOKEN_STORAGE_KEY } from "../../../shared/services/api";
 import { notifications } from "../notifications/data/notifications";
 import { GlobalSearch } from "../global-search/components/GlobalSearch";
+import { useTheme } from "../../../hooks/useTheme";
 
 export function Header() {
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profilePreviewOpen, setProfilePreviewOpen] = useState(false);
@@ -30,11 +32,6 @@ export function Header() {
   const profileRef = useRef(null);
 
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setIsDark(isDarkMode);
-  }, []);
-
-  useEffect(() => {
     const closeOnOutsideClick = (event) => {
       if (!notificationsRef.current?.contains(event.target)) {
         setNotificationsOpen(false);
@@ -47,18 +44,6 @@ export function Header() {
     document.addEventListener("mousedown", closeOnOutsideClick);
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, []);
-
-  const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    if (newIsDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   const openProfile = () => {
     setProfileForm({
