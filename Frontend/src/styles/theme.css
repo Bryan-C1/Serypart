@@ -8,14 +8,14 @@
   --text-muted: #5b6b85;
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
-  --primary: #2563eb;
+  --primary: #2f9e6b;
   --primary-contrast: #ffffff;
-  --success: #16a34a;
+  --success: #2aa86d;
   --success-bg: #dcfce7;
   --danger: #dc2626;
   --sidebar-bg: #ffffff;
-  --sidebar-active-bg: #dbeafe;
-  --sidebar-active-text: #1e3a8a;
+  --sidebar-active-bg: #dff7ea;
+  --sidebar-active-text: #146c43;
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
@@ -59,15 +59,15 @@
   --text-muted: #b4c2da;
   --input-bg: #16243d;
   --input-border: #4a6392;
-  --primary: #5b9cf8;
-  --primary-contrast: #0b1b33;
-  --success: #5be39a;
-  --success-bg: rgba(91, 227, 154, 0.16);
+  --primary: #4cc58d;
+  --primary-contrast: #042d1d;
+  --success: #6fe0a1;
+  --success-bg: rgba(111, 224, 161, 0.16);
   --danger: #f98a8a;
   --warning: var(--primary);
   --sidebar-bg: #1a2b4a;
-  --sidebar-active-bg: #3a62a8;
-  --sidebar-active-text: #eaf2ff;
+  --sidebar-active-bg: #1f5d45;
+  --sidebar-active-text: #eafef5;
 }
 
 @theme inline {

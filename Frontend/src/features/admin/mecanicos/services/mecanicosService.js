@@ -2,18 +2,6 @@ import { apiRequest } from "../../../../shared/services/api";
 
 let mecanicosCache = [];
 
-function parseHorariosPorDia(value) {
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value);
-    } catch {
-      throw new Error("La API devolvió un horario de disponibilidad inválido para un mecánico.");
-    }
-  }
-
-  return value || {};
-}
-
 function fromApi(mecanico) {
   const tipoDocumento = mecanico.tipo_documento || "V";
   const numeroDocumento = mecanico.numero_documento || "";
@@ -28,7 +16,6 @@ function fromApi(mecanico) {
     email: mecanico.email || "",
     telefono: mecanico.telefono || "",
     especialidad: mecanico.especialidad || "General",
-    horariosPorDia: parseHorariosPorDia(mecanico.horarios_por_dia),
     estado: mecanico.estado || "activo",
     notas: mecanico.notas || "",
   };
@@ -44,7 +31,6 @@ function toApi(mecanico) {
     email: mecanico.email,
     telefono: mecanico.telefono,
     especialidad: mecanico.especialidad,
-    horarios_por_dia: mecanico.horariosPorDia || {},
     estado: mecanico.estado,
     notas: mecanico.notas,
   };
@@ -83,4 +69,30 @@ export async function deleteMecanico(id) {
 export function getMecanicoNombre(id) {
   const mecanico = mecanicosCache.find((item) => String(item.id) === String(id));
   return mecanico ? [mecanico.nombre, mecanico.apellido].filter(Boolean).join(" ") : "—";
+}
+
+export async function getActividadMensual(id, inicioMes, fechaSeleccionada) {
+  const params = new URLSearchParams({
+    mes: inicioMes,
+    fecha: fechaSeleccionada,
+  });
+  return apiRequest(`/mecanicos/${id}/actividad-mensual?${params}`);
+}
+
+export async function createAsistenciaMecanico(id, asistencia) {
+  return apiRequest(`/mecanicos/${id}/asistencias`, {
+    method: "POST",
+    body: asistencia,
+  });
+}
+
+export async function updateAsistenciaMecanico(id, idAsistencia, asistencia) {
+  return apiRequest(`/mecanicos/${id}/asistencias/${idAsistencia}`, {
+    method: "PUT",
+    body: asistencia,
+  });
+}
+
+export async function deleteAsistenciaMecanico(id, idAsistencia) {
+  return apiRequest(`/mecanicos/${id}/asistencias/${idAsistencia}`, { method: "DELETE" });
 }

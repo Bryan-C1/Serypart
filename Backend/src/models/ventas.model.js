@@ -30,6 +30,81 @@ function getRepuestoItems(data) {
     });
 }
 
+function getServiceItems(data) {
+  const items = Array.isArray(data.items) ? data.items : [];
+  const services = items
+    .filter((item) => item.id_servicio !== undefined && item.id_servicio !== null)
+    .map((item) => {
+      const idServicio = Number(item.id_servicio);
+      const cantidad = Number(item.cantidad);
+      if (!Number.isInteger(idServicio) || idServicio < 1
+        || !Number.isInteger(cantidad) || cantidad < 1) {
+        throw new Error('Los servicios de la venta tienen datos inválidos.');
+      }
+      return { id_servicio: idServicio, cantidad };
+    });
+  if (new Set(services.map((item) => item.id_servicio)).size !== services.length) {
+    throw new Error('No se puede incluir dos veces el mismo servicio en una venta.');
+  }
+  return services;
+}
+
+async function getAppointmentId(connection, clientId, value) {
+  if (value === undefined || value === null || value === '') return null;
+  const appointmentId = Number(value);
+  if (!Number.isSafeInteger(appointmentId) || appointmentId < 1) {
+    const error = new Error('La cita asociada a la venta no es válida.');
+    error.status = 400;
+    throw error;
+  }
+  const [appointments] = await connection.query(
+    `SELECT id_agendamiento
+       FROM agendamiento
+      WHERE id_agendamiento = ? AND id_cliente = ? AND id_mecanico IS NOT NULL`,
+    [appointmentId, clientId]
+  );
+  if (appointments.length === 0) {
+    const error = new Error('La cita debe pertenecer al cliente y tener un mecánico asignado.');
+    error.status = 400;
+    throw error;
+  }
+  return appointmentId;
+}
+
+async function insertServiceItems(connection, saleId, items, previousItems = []) {
+  for (const item of items) {
+    const previous = previousItems.find((saved) => Number(saved.id_servicio) === item.id_servicio);
+    let service;
+    if (previous) {
+      service = {
+        nombre: previous.nombre_servicio,
+        precio: Number(previous.precio_unitario),
+      };
+    } else {
+      const [services] = await connection.query(
+        'SELECT nombre, precio FROM servicios WHERE id_servicio = ?',
+        [item.id_servicio]
+      );
+      if (services.length === 0) {
+        const error = new Error(`El servicio ${item.id_servicio} no existe.`);
+        error.status = 400;
+        throw error;
+      }
+      service = services[0];
+    }
+
+    await connection.query(
+      `INSERT INTO detalle_venta_servicios
+        (id_venta, id_servicio, nombre_servicio, cantidad, precio_unitario, subtotal)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        saleId, item.id_servicio, service.nombre, item.cantidad,
+        service.precio, Number(service.precio) * item.cantidad,
+      ]
+    );
+  }
+}
+
 function mapSaleRows(rows) {
   const sales = new Map();
   rows.forEach((row) => {
@@ -37,6 +112,7 @@ function mapSaleRows(rows) {
     if (!sale) {
       sale = {
         id_venta: row.id_venta,
+        id_agendamiento: row.id_agendamiento,
         id_cliente: row.id_cliente,
         id_usuario: row.id_usuario,
         fecha_venta: row.fecha_venta,
@@ -50,7 +126,7 @@ function mapSaleRows(rows) {
       };
       sales.set(row.id_venta, sale);
     }
-    if (row.id_detalle_venta !== null) {
+    if (row.id_detalle_venta != null) {
       sale.items.push({
         id_detalle_venta: row.id_detalle_venta,
         id_venta: row.id_venta,
@@ -63,6 +139,36 @@ function mapSaleRows(rows) {
     }
   });
   return [...sales.values()];
+}
+
+async function addServiceItems(connection, sales) {
+  if (sales.length === 0) return sales;
+  const saleIds = sales.map((sale) => sale.id_venta);
+  const placeholders = saleIds.map(() => '?').join(', ');
+  const [items] = await connection.query(
+    `SELECT id_venta, id_detalle_venta_servicio AS id_detalle_venta,
+            id_servicio, nombre_servicio AS nombre, cantidad, precio_unitario, subtotal
+       FROM detalle_venta_servicios
+      WHERE id_venta IN (${placeholders})
+      ORDER BY id_detalle_venta_servicio`,
+    saleIds
+  );
+  const salesById = new Map(sales.map((sale) => [Number(sale.id_venta), sale]));
+  items.forEach((item) => {
+    const sale = salesById.get(Number(item.id_venta));
+    if (sale) {
+      sale.items.push({
+        ...item,
+        id_venta: item.id_venta,
+        id_servicio: item.id_servicio == null ? null : Number(item.id_servicio),
+        cantidad: Number(item.cantidad),
+        precio_unitario: Number(item.precio_unitario),
+        subtotal: Number(item.subtotal),
+        tipo: 'servicio',
+      });
+    }
+  });
+  return sales;
 }
 
 async function getVenta(connection, id) {
@@ -79,7 +185,8 @@ async function getVenta(connection, id) {
       ORDER BY dv.id_detalle_venta`,
     [id]
   );
-  return mapSaleRows(rows)[0] || null;
+  const sales = mapSaleRows(rows);
+  return (await addServiceItems(connection, sales))[0] || null;
 }
 
 async function insertItems(connection, saleId, items) {
@@ -131,7 +238,7 @@ async function getAll() {
        LEFT JOIN metodo_pago mp ON mp.id_metodo_pago = v.id_metodo_pago
       ORDER BY v.fecha_venta DESC, v.${PK} DESC, dv.id_detalle_venta`
   );
-  return mapSaleRows(rows);
+  return addServiceItems(pool, mapSaleRows(rows));
 }
 
 async function getById(id) {
@@ -147,18 +254,25 @@ async function create(data) {
   await ensureClientRelationColumns();
   const { id_cliente, fecha_venta, total, id_metodo_pago, estado } = data;
   const items = getRepuestoItems(data);
+  const serviceItems = getServiceItems(data);
   const connection = await pool.getConnection();
   let saleId;
   try {
     await connection.beginTransaction();
     const [clients] = await connection.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
     if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
+    const appointmentId = await getAppointmentId(connection, id_cliente, data.id_cita ?? data.id_agendamiento);
     const [result] = await connection.query(
-      `INSERT INTO ${TABLE} (id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado) VALUES (?, ?, ?, ?, ?, ?)`,
-      [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado]
+      `INSERT INTO ${TABLE}
+        (id_usuario, id_cliente, id_agendamiento, fecha_venta, total, id_metodo_pago, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [clients[0].id_usuario, id_cliente, appointmentId, fecha_venta, total, id_metodo_pago, estado]
     );
     saleId = result.insertId;
-    if (estado !== 'cancelada') await insertItems(connection, saleId, items);
+    if (estado !== 'cancelada') {
+      await insertItems(connection, saleId, items);
+      await insertServiceItems(connection, saleId, serviceItems);
+    }
     if (estado === 'pagada') await addSaleHistory(connection, saleId, id_cliente, fecha_venta);
     await connection.commit();
   } catch (error) {
@@ -174,6 +288,7 @@ async function update(id, data) {
   await ensureClientRelationColumns();
   const { id_cliente, fecha_venta, total, id_metodo_pago, estado } = data;
   const items = estado === 'cancelada' ? [] : getRepuestoItems(data);
+  const serviceItems = estado === 'cancelada' ? [] : getServiceItems(data);
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -187,8 +302,13 @@ async function update(id, data) {
     }
     const [clients] = await connection.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
     if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
+    const appointmentId = await getAppointmentId(connection, id_cliente, data.id_cita ?? data.id_agendamiento);
     const [existingItems] = await connection.query(
       'SELECT id_repuesto, cantidad FROM detalle_venta WHERE id_venta = ? FOR UPDATE',
+      [id]
+    );
+    const [existingServiceItems] = await connection.query(
+      'SELECT id_servicio, nombre_servicio, precio_unitario FROM detalle_venta_servicios WHERE id_venta = ? FOR UPDATE',
       [id]
     );
     if (existingSales[0].estado !== 'cancelada') {
@@ -200,49 +320,17 @@ async function update(id, data) {
       }
     }
     await connection.query('DELETE FROM detalle_venta WHERE id_venta = ?', [id]);
+    await connection.query('DELETE FROM detalle_venta_servicios WHERE id_venta = ?', [id]);
     await connection.query(
-      `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, fecha_venta = ?, total = ?, id_metodo_pago = ?, estado = ? WHERE ${PK} = ?`,
-      [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado, id]
+      `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, id_agendamiento = ?, fecha_venta = ?, total = ?, id_metodo_pago = ?, estado = ? WHERE ${PK} = ?`,
+      [clients[0].id_usuario, id_cliente, appointmentId, fecha_venta, total, id_metodo_pago, estado, id]
     );
-    if (estado !== 'cancelada') await insertItems(connection, id, items);
+    if (estado !== 'cancelada') {
+      await insertItems(connection, id, items);
+      await insertServiceItems(connection, id, serviceItems, existingServiceItems);
+    }
     if (estado === 'pagada' && existingSales[0].estado !== 'pagada') {
       await addSaleHistory(connection, id, id_cliente, fecha_venta);
-    }
-    if (estado === 'cancelada') {
-      if (existingSales[0].estado !== 'cancelada') {
-        const cantidadesPorRepuesto = new Map();
-        for (const item of existingItems) {
-          cantidadesPorRepuesto.set(
-            item.id_repuesto,
-            (cantidadesPorRepuesto.get(item.id_repuesto) || 0) + Number(item.cantidad)
-          );
-        }
-        for (const [idRepuesto, cantidad] of cantidadesPorRepuesto) {
-          await connection.query(
-            'UPDATE repuestos SET stock = stock + ? WHERE id_repuesto = ?',
-            [cantidad, idRepuesto]
-          );
-        }
-      }
-      await connection.query(
-        `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, fecha_venta = ?, total = ?, id_metodo_pago = ?, estado = ? WHERE ${PK} = ?`,
-        [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado, id]
-      );
-    } else {
-      if (existingSales[0].estado !== 'cancelada') {
-        for (const item of existingItems) {
-          await connection.query(
-            'UPDATE repuestos SET stock = stock + ? WHERE id_repuesto = ?',
-            [item.cantidad, item.id_repuesto]
-          );
-        }
-      }
-      await connection.query('DELETE FROM detalle_venta WHERE id_venta = ?', [id]);
-      await connection.query(
-        `UPDATE ${TABLE} SET id_usuario = ?, id_cliente = ?, fecha_venta = ?, total = ?, id_metodo_pago = ?, estado = ? WHERE ${PK} = ?`,
-        [clients[0].id_usuario, id_cliente, fecha_venta, total, id_metodo_pago, estado, id]
-      );
-      await insertItems(connection, id, items);
     }
     await connection.commit();
   } catch (error) {

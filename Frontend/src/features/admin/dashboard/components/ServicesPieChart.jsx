@@ -34,9 +34,9 @@ export function ServicesPieChart({ periodo }) {
           className="px-3 py-2 bg-input-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="todos">Todos</option>
-          <option value="3">Top 3</option>
-          <option value="2">Top 2</option>
           <option value="1">Top 1</option>
+          <option value="2">Top 2</option>
+          <option value="3">Top 3</option>
         </select>
       </div>
       <div className="relative h-[300px]">

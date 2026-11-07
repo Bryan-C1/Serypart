@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Plus, Ban } from "lucide-react";
 import { useMecanicos } from "../hooks/useMecanicos";
 import { StatsRow } from "../components/StatsRow";
@@ -7,10 +8,12 @@ import { PaginationBar } from "../components/PaginationBar";
 import { ModalWrapper } from "../components/ModalWrapper";
 import { ModalFooter } from "../components/ModalFooter";
 import { FormMecanico } from "../components/FormMecanico";
+import { ActividadCalendarioModal } from "../components/ActividadCalendarioModal";
 import { DetailField } from "../components/DetailField";
-import { estadoConfig, formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
+import { estadoConfig } from "../services/mecanicosData";
 
 export default function MecanicosPage() {
+  const [actividadMecanico, setActividadMecanico] = useState(null);
   const {
     searchTerm, filterEstado, filterEspecialidad, showFilters, setShowFilters, sortBy,
     loading, saving, error, formError, loadMecanicos,
@@ -67,6 +70,7 @@ export default function MecanicosPage() {
               mecanicos={paginatedMecanicos}
               onToggleEstado={handleToggleEstado}
               onVerDetalles={handleVerDetalles}
+              onActividad={setActividadMecanico}
               onEditar={handleEditar}
               onAnular={handleAnular}
             />}
@@ -83,7 +87,7 @@ export default function MecanicosPage() {
 
       {showModal && (
         <ModalWrapper title="Nuevo Mecánico" onClose={closeAll}>
-          <FormMecanico formData={formData} setFormData={setFormData} mecanicos={mecanicos} />
+          <FormMecanico formData={formData} setFormData={setFormData} />
           {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
           <ModalFooter onCancel={closeAll} onSave={handleGuardarNuevo} saveLabel="Guardar Mecánico" disabled={saving} />
         </ModalWrapper>
@@ -100,8 +104,10 @@ export default function MecanicosPage() {
               <DetailField label="Dirección" value={selectedMecanico.direccion || "—"} />
               <DetailField label="Email" value={selectedMecanico.email} />
               <DetailField label="Teléfono" value={selectedMecanico.telefono} />
+              <DetailField label="Departamento" value={selectedMecanico.departamento || "Antioquia"} />
+              <DetailField label="Ciudad" value={selectedMecanico.ciudad || "Medellín"} />
+              <DetailField label="Región" value={selectedMecanico.regionAntioquia || "—"} />
               <DetailField label="Especialidad" value={selectedMecanico.especialidad} />
-              <DetailField label="Horario de disponibilidad" value={selectedMecanico.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(selectedMecanico.horariosPorDia)) || "—"} />
               <DetailField label="Estado" value={estadoConfig[selectedMecanico.estado].label} />
             </div>
           </div>
@@ -116,7 +122,7 @@ export default function MecanicosPage() {
 
       {showEditModal && selectedMecanico && (
         <ModalWrapper title="Editar Mecánico" onClose={closeAll}>
-          <FormMecanico formData={formData} setFormData={setFormData} mecanicos={mecanicos} />
+          <FormMecanico formData={formData} setFormData={setFormData} />
           {formError && <div role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
           <ModalFooter onCancel={closeAll} onSave={handleGuardarEdicion} saveLabel="Guardar Cambios" disabled={saving} />
         </ModalWrapper>
@@ -137,6 +143,13 @@ export default function MecanicosPage() {
             <button onClick={handleConfirmarAnular} disabled={saving} className="px-6 py-2 bg-destructive text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">{saving ? "Guardando..." : "Sí, Anular"}</button>
           </div>
         </ModalWrapper>
+      )}
+
+      {actividadMecanico && (
+        <ActividadCalendarioModal
+          mecanico={actividadMecanico}
+          onClose={() => setActividadMecanico(null)}
+        />
       )}
     </div>
   );

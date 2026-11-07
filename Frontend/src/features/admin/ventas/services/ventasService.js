@@ -6,17 +6,19 @@ function fromApi(venta) {
     ...item,
     id_detalle_venta: Number(item.id_detalle_venta),
     id_venta: idVenta,
-    id_repuesto: Number(item.id_repuesto),
+    id_repuesto: item.id_repuesto == null ? null : Number(item.id_repuesto),
+    id_servicio: item.id_servicio == null ? null : Number(item.id_servicio),
     cantidad: Number(item.cantidad),
     precio_unitario: Number(item.precio_unitario),
     subtotal: Number(item.subtotal),
     nombre: item.nombre || item.nombre_repuesto || "",
-    tipo: "repuesto",
+    tipo: item.tipo || (item.id_servicio != null ? "servicio" : "repuesto"),
   }));
   const total = Number(venta.total);
   return {
     ...venta,
     id_venta: idVenta,
+    id_cita: venta.id_agendamiento == null ? "" : Number(venta.id_agendamiento),
     id_cliente: Number(venta.id_cliente),
     id_usuario: venta.id_usuario == null ? null : Number(venta.id_usuario),
     fecha_venta: String(venta.fecha_venta || "").slice(0, 10),
@@ -31,15 +33,28 @@ function fromApi(venta) {
 
 function toApi(venta) {
   const items = (venta.items || [])
-    .filter((item) => item.id_repuesto)
-    .map((item) => ({
-      id_repuesto: Number(item.id_repuesto),
-      cantidad: Number(item.cantidad),
-      precio_unitario: Number(item.precio_unitario),
-    }));
+    .map((item) => {
+      if (item.id_servicio) {
+        return {
+          id_servicio: Number(item.id_servicio),
+          cantidad: Number(item.cantidad),
+          precio_unitario: Number(item.precio_unitario),
+        };
+      }
+      if (item.id_repuesto) {
+        return {
+          id_repuesto: Number(item.id_repuesto),
+          cantidad: Number(item.cantidad),
+          precio_unitario: Number(item.precio_unitario),
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
 
   return {
     id_cliente: Number(venta.id_cliente),
+    id_cita: venta.id_cita || venta.id_agendamiento || null,
     fecha_venta: venta.fecha_venta,
     total: (venta.items || []).reduce((sum, item) => sum + Number(item.subtotal || 0), 0)
       + Number(venta.otherConceptsTotal || 0),
