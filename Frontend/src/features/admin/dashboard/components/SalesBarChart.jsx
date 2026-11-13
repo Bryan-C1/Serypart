@@ -30,15 +30,21 @@ export function SalesBarChart({ periodo, onPeriodoChange }) {
         <BarChart data={datosFiltrados}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="color-mix(in srgb, var(--primary) 88%, white)" />
-              <stop offset="28%" stopColor="color-mix(in srgb, var(--primary) 68%, white)" />
-              <stop offset="100%" stopColor="var(--primary)" />
+              <stop offset="0%" stopColor="#93c5fd" />
+              <stop offset="28%" stopColor="#60a5fa" />
+              <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="month" stroke="var(--muted-foreground)" />
-          <YAxis stroke="var(--muted-foreground)" />
-          <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }} />
+          <YAxis
+            stroke="var(--muted-foreground)"
+            tickFormatter={(value) => Number(value).toLocaleString("es-CO")}
+          />
+          <Tooltip
+            contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+            formatter={(value) => [`$${Number(value).toLocaleString("es-CO")}`, "Ventas"]}
+          />
           <Bar dataKey="ventas" fill={`url(#${gradientId})`} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
