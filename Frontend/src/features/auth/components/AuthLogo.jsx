@@ -4,14 +4,14 @@ import logoDark from "../../../assets/LogoSeryN.png";
 
 export function AuthLogo() {
   return (
-    <div className="flex items-center gap-3 mb-8">
-      <div>
-        <img src={logoLight} alt="SeryPart" className="w-14 h-14 object-contain dark:hidden" />
-        <img src={logoDark} alt="SeryPart" className="w-14 h-14 object-contain hidden dark:block" />
+    <div className="mb-8 flex items-center gap-3">
+      <div className="flex shrink-0 items-center justify-center rounded-full bg-transparent">
+        <img src={logoLight} alt="SeryPart" className="h-12 w-12 object-contain dark:hidden" />
+        <img src={logoDark} alt="SeryPart" className="hidden h-12 w-12 object-contain dark:block" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold">SeryPart</h1>
-        <p className="text-sm text-muted-foreground">Taller Mecánico</p>
+        <h1 className="text-3xl font-black tracking-[-0.04em] text-[#111827]">SeryPart</h1>
+        <p className="text-sm font-medium text-[#4b5563]">Taller Mecánico</p>
       </div>
     </div>
   );

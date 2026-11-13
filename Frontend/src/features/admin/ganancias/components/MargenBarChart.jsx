@@ -12,15 +12,15 @@ export function MargenBarChart({ gananciasPorProducto }) {
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={gananciasPorProducto}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="nombre" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} label={{ value: "%", angle: -90, position: "insideLeft" }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="nombre" tick={{ fontSize: 12, fill: "var(--text-muted)" }} />
+          <YAxis tick={{ fontSize: 12, fill: "var(--text-muted)" }} label={{ value: "%", angle: -90, position: "insideLeft", fill: "var(--text-muted)" }} />
           <Tooltip
-            contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+            contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text)" }}
             formatter={(value) => [`${value.toFixed(1)}%`, "Margen"]}
           />
-          <Legend />
-          <Bar dataKey="margen" fill="#059669" name="Margen de Ganancia (%)" radius={[8, 8, 0, 0]} />
+          <Legend wrapperStyle={{ color: "var(--text)" }} />
+          <Bar dataKey="margen" fill="var(--success)" name="Margen de Ganancia (%)" radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

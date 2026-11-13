@@ -74,14 +74,14 @@ export function useAgendamiento() {
     setCurrentDate(new Date());
   };
 
-  const navegarAFecha = (fecha) => {
+  const navegarAFecha = useCallback((fecha) => {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha || "");
     if (!match) return;
     const [, year, month, day] = match.map(Number);
     const date = new Date(year, month - 1, day);
     if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return;
     setCurrentDate(new Date(year, month - 1, 1));
-  };
+  }, []);
 
   const abrirNuevaCita = (day) => {
     setSelectedCita(null);

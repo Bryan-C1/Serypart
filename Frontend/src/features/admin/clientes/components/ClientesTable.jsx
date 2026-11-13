@@ -1,4 +1,4 @@
-import { MapPin, Phone, Eye, Edit, Ban } from "lucide-react";
+import { MapPin, Phone, Eye, Edit, Trash2 } from "lucide-react";
 import { activeInactiveStatusOptions, annulledStatusOption, EntityStatusSelect } from "../../components/EntityStatusSelect";
 
 export function ClientesTable({ clientes, onToggleEstado, onVerDetalles, onVerVehiculos, onEditar, onEliminar }) {
@@ -72,9 +72,16 @@ export function ClientesTable({ clientes, onToggleEstado, onVerDetalles, onVerVe
                     <button onClick={() => onEditar(cliente)} className="p-2 hover:bg-accent rounded-lg transition-colors" title="Editar">
                       <Edit className="w-4 h-4" />
                     </button>
-                    {cliente.estado !== "anulado" && <button onClick={() => onEliminar(cliente)} className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors" title="Anular">
-                      <Ban className="w-4 h-4" />
-                    </button>}
+                    <button
+                      type="button"
+                      onClick={() => onEliminar(cliente)}
+                      disabled={cliente.vehiculos > 0}
+                      className="rounded-lg p-2 text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:bg-transparent"
+                      title={cliente.vehiculos > 0 ? "Tiene vehículos, solo se puede desactivar" : "Eliminar cliente"}
+                      aria-label="Eliminar cliente"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </td>
               </tr>

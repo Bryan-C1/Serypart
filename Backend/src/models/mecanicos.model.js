@@ -152,9 +152,11 @@ async function update(id, data) {
       `UPDATE usuarios SET ${userFields.join(', ')} WHERE id_usuario = ?`,
       [...userValues, userId]
     );
+    const mechanicFields = ['especialidad = ?', 'turno = ?'];
+    const mechanicValues = [data.especialidad || 'General', data.turno || 'Completo'];
     await connection.query(
-      `UPDATE ${TABLE} SET especialidad = ?, turno = ? WHERE ${PK} = ?`,
-      [data.especialidad || 'General', data.turno || 'Completo', id]
+      `UPDATE ${TABLE} SET ${mechanicFields.join(', ')} WHERE ${PK} = ?`,
+      [...mechanicValues, id]
     );
     await connection.commit();
   } catch (error) {
@@ -185,6 +187,18 @@ async function remove(id) {
     );
     if (appointments.length > 0) {
       const error = new Error('No se puede eliminar un mecánico que está asignado a una cita.');
+      error.status = 409;
+      throw error;
+    }
+    const [activity] = await connection.query(
+      `SELECT id_asistencia AS id FROM asistencias_mecanicos WHERE id_mecanico = ?
+       UNION ALL
+       SELECT id_trabajo AS id FROM trabajos_mecanicos WHERE id_mecanico = ?
+       LIMIT 1`,
+      [id, id]
+    );
+    if (activity.length > 0) {
+      const error = new Error('No se puede eliminar un mecánico que tiene asistencias o trabajos registrados.');
       error.status = 409;
       throw error;
     }

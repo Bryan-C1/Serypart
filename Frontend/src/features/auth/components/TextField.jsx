@@ -11,19 +11,19 @@ export function TextField({
 }) {
   return (
     <div className={wrapperClassName}>
-      <label htmlFor={id} className="block text-sm font-medium mb-2">
+      <label htmlFor={id} className="mb-2 block text-[1.06rem] font-medium text-[#1f2937]">
         {label}
       </label>
       <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#6b7280]" />}
         <input
           id={id}
-          className={`w-full pl-10 ${rightSlot ? "pr-12" : "pr-4"} py-3 bg-input-background border border-border rounded-lg text-gray-900 placeholder:text-muted-foreground ${placeholderClassName} focus:outline-none focus:ring-2 focus:ring-ring`}
+          className={`w-full ${Icon ? "pl-11" : "pl-4"} ${rightSlot ? "pr-12" : "pr-4"} border border-[#cad7ea] bg-[#dfeaf6] py-3 text-[1.05rem] text-[#111827] placeholder:text-[#7a8ea5] shadow-inner shadow-[#edf3fb] outline-none transition-all duration-200 focus:border-[#94a3b8] focus:ring-2 focus:ring-[#b9d9ff] ${placeholderClassName}`}
           {...inputProps}
         />
         {rightSlot}
       </div>
-      {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+      {hint && <p className="mt-2 text-xs text-[#6b7280]">{hint}</p>}
     </div>
   );
 }

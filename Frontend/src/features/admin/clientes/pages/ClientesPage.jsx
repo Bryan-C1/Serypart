@@ -1,4 +1,4 @@
-import { Plus, Ban } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClientes } from "../hooks/useClientes";
@@ -159,14 +159,14 @@ export default function ClientesPage() {
       )}
 
       {showDeleteModal && selectedCliente && (
-        <ModalWrapper title="Anular Cliente" onClose={closeAll}>
+        <ModalWrapper title="Eliminar Cliente" onClose={closeAll}>
           {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <div className="space-y-4">
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
-              <Ban className="w-8 h-8 text-destructive shrink-0" />
+              <Trash2 className="w-8 h-8 text-destructive shrink-0" />
               <div>
-                <p className="font-medium">¿Estás seguro de anular este cliente?</p>
-                <p className="text-sm text-muted-foreground mt-1">El cliente <strong>{selectedCliente.nombre}</strong> quedará anulado y podrá consultarse desde el filtro de anulados.</p>
+                <p className="font-medium">¿Estás seguro de eliminar este cliente?</p>
+                <p className="text-sm text-muted-foreground mt-1">El cliente <strong>{selectedCliente.nombre}</strong> se eliminará permanentemente.</p>
               </div>
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function ClientesPage() {
               Cancelar
             </button>
             <button onClick={handleConfirmarEliminar} className="px-6 py-2 bg-destructive text-white rounded-lg hover:opacity-90 transition-opacity">
-              Sí, Anular
+              Sí, eliminar
             </button>
           </div>
         </ModalWrapper>

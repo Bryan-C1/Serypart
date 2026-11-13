@@ -397,6 +397,9 @@ export function FormVenta({ formData, setFormData }) {
                 </option>
               ))}
             </SearchableSelect>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Los servicios de la venta se atribuyen al mecánico asignado a esta cita y aparecen en su liquidación.
+            </p>
           </div>
         )}
         <div>
@@ -566,7 +569,7 @@ export function FormVenta({ formData, setFormData }) {
               </thead>
               <tbody className="divide-y divide-border">
                 {items.map((it) => (
-                  <tr key={`${it.id_detalle_venta}-${it.id_repuesto}`}>
+                  <tr key={`${it.tipo}-${it.id_detalle_venta}`}>
                     <td className="px-3 py-2">{it.nombre}</td>
                     <td className="px-3 py-2">{it.cantidad}</td>
                     <td className="px-3 py-2">${Number(it.precio_unitario).toFixed(2)}</td>

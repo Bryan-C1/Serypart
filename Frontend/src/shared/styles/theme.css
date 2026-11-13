@@ -1,4 +1,4 @@
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
   --font-size: 16px;
@@ -8,9 +8,9 @@
   --card-foreground: #17202a;
   --popover: #ffffff;
   --popover-foreground: #17202a;
-  --primary: #123b5d;
+  --primary: #2f9e6b;
   --primary-foreground: #ffffff;
-  --secondary: #2563eb;
+  --secondary: #2f9e6b;
   --secondary-foreground: #ffffff;
   --muted: #e7edf2;
   --muted-foreground: #64748b;
@@ -37,31 +37,31 @@
   --radius: 0.625rem;
   --sidebar: #123b5d;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #60a5fa;
+  --sidebar-primary: #64d59f;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1d4f78;
+  --sidebar-accent: #1d5d46;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2d5e82;
-  --sidebar-ring: #60a5fa;
-  --auth-primary: #123b5d;
+  --sidebar-border: #2d7c5b;
+  --sidebar-ring: #64d59f;
+  --auth-primary: #2f9e6b;
   --auth-primary-foreground: #ffffff;
   --auth-secondary: #2563eb;
   }
 
 .dark {
-  --background: #06141d;
+  --background: #1a3248;
   --foreground: #edf6ff;
-  --card: #0c1d2b;
+  --card: #203e56;
   --card-foreground: #edf6ff;
-  --popover: #10263a;
+  --popover: #2b4c67;
   --popover-foreground: #edf6ff;
-  --primary: #3b82f6;
+  --primary: #4cc58d;
   --primary-foreground: #ffffff;
-  --secondary: #7dd3fc;
+  --secondary: #7ee1b0;
   --secondary-foreground: #02131d;
-  --muted: #152d40;
+  --muted: #29445b;
   --muted-foreground: #bdd1e7;
-  --accent: #14314d;
+  --accent: #31516d;
   --accent-foreground: #edf6ff;
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
@@ -69,9 +69,9 @@
   --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-foreground: #ffffff;
-  --border: #1d3d58;
-  --input: #0e2031;
-  --input-background: #0c1d2b;
+  --border: #3d5d78;
+  --input: #31516d;
+  --input-background: #203e56;
   --switch-background: #214765;
   --ring: #7dd3fc;
   --font-weight-medium: 500;
@@ -81,14 +81,14 @@
   --chart-3: #22c55e;
   --chart-4: #f59e0b;
   --chart-5: #8b5cf6;
-  --sidebar: #050f18;
+  --sidebar: #162d43;
   --sidebar-foreground: #edf6ff;
-  --sidebar-primary: #7dd3fc;
+  --sidebar-primary: #7ee1b0;
   --sidebar-primary-foreground: #02131d;
-  --sidebar-accent: #112e45;
+  --sidebar-accent: #214e3d;
   --sidebar-accent-foreground: #edf6ff;
-  --sidebar-border: #1d3d58;
-  --sidebar-ring: #7dd3fc;
+  --sidebar-border: #3a7b60;
+  --sidebar-ring: #7ee1b0;
 }
 
 @theme inline {

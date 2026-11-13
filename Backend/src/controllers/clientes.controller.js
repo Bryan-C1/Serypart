@@ -21,4 +21,12 @@ async function update(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAll, create, update };
+async function remove(req, res, next) {
+  try {
+    const deleted = await ClienteModel.remove(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'No encontrado' });
+    res.status(204).send();
+  } catch (err) { next(err); }
+}
+
+module.exports = { getAll, create, update, remove };

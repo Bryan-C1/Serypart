@@ -21,6 +21,7 @@ export default function AgendamientoPage() {
   } = useAgendamiento();
   const [searchParams] = useSearchParams();
   const [filterEstado, setFilterEstado] = useState("todos");
+  const citaId = searchParams.get("cita");
   const vehiculoId = searchParams.get("vehiculo");
   const clienteId = searchParams.get("cliente");
   const filtrarCitas = (lista) => lista.filter((cita) => (
@@ -43,6 +44,16 @@ export default function AgendamientoPage() {
     const updated = await cambiarEstadoCita(cita, estado);
     if (updated && cita.estado === "cancelada" && filterEstado === "anulados") setFilterEstado("todos");
   };
+
+  useEffect(() => {
+    if (!citaId) return;
+    const cita = citas.find((item) => String(item.id) === citaId);
+    if (!cita) return;
+
+    setFechaCitasVisible(cita.fecha_cita);
+    navegarAFecha(cita.fecha_cita);
+    setCitaDetalle(cita);
+  }, [citaId, citas, navegarAFecha]);
 
   useEffect(() => {
     if (!vistaFiltrada || citasFiltradas.length === 0) return;
@@ -83,6 +94,12 @@ export default function AgendamientoPage() {
             {error && <button type="button" onClick={loadCitas} className="font-medium underline">Reintentar citas</button>}
             {catalogsError && <button type="button" onClick={loadCatalogs} className="font-medium underline">Reintentar catálogos</button>}
           </div>
+        </div>
+      )}
+
+      {citaId && !loading && !error && !citas.some((cita) => String(cita.id) === citaId) && (
+        <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          No se encontró la cita solicitada (ID {citaId}).
         </div>
       )}
 

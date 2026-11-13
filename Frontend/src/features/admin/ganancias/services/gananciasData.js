@@ -40,4 +40,4 @@ export const etiquetasPeriodo = {
   año: "Año 2026",
 };
 
-export const COLORS = ["#123B5D", "#2563EB", "#059669", "#D97706", "#7C3AED", "#DC2626"];
+export const COLORS = ["var(--primary)", "var(--success)", "var(--danger)", "var(--text-muted)"];

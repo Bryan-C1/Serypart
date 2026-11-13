@@ -20,7 +20,7 @@ export function GananciaPorCategoriaPieChart({ gananciasPorCategoria }) {
             labelLine={false}
             label={({ categoria, percent }) => `${categoria} ${(percent * 100).toFixed(0)}%`}
             outerRadius={100}
-            fill="#8884d8"
+            fill="var(--primary)"
             dataKey="ganancia"
           >
             {gananciasPorCategoria.map((entry, index) => (
@@ -28,7 +28,7 @@ export function GananciaPorCategoriaPieChart({ gananciasPorCategoria }) {
             ))}
           </Pie>
           <Tooltip
-            contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+            contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text)" }}
             formatter={(value) => `$${value.toFixed(2)}`}
           />
         </PieChart>

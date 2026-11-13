@@ -4,7 +4,10 @@ import { inventoryAlerts } from "../services/dashboardData";
 export function InventoryAlertsGrid() {
   return (
     <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-      <h3 className="font-semibold mb-4">Alertas de Inventario</h3>
+      <div className="mb-4">
+        <h3 className="font-semibold">Alertas de Inventario</h3>
+        <p className="text-xs text-muted-foreground mt-1">Estado actual del stock</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {inventoryAlerts.map((item, index) => (
           <div key={index} className="p-4 border border-warning/50 bg-warning/10 rounded-lg">

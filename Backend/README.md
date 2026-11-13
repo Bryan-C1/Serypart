@@ -21,12 +21,27 @@ clave aleatoria larga; esta variable es necesaria para iniciar sesión y validar
 los tokens. No compartas ni agregues tu archivo `.env` al repositorio.
 
 Después, ejecuta las migraciones pendientes en orden. Para habilitar
-asignaciones de mecánicos en citas, aplica
+la gestión de mecánicos, aplica `migrations/001_roles_permisos.sql`; esta
+migración agrega `roles.estado`, usado para seleccionar el rol activo al crear
+un mecánico. Para habilitar asignaciones de mecánicos en citas, aplica
 `migrations/006_asignar_mecanicos_agendamiento.sql` y
 `migrations/007_registrar_historial_servicios.sql`. La migración 007 llena
 el historial con citas completadas y ventas pagadas que ocurrieron después
 de una cita completada. La tabla `mecanicos` existente conserva su relación
-con `usuarios`.
+con `usuarios`. Para registrar asistencias de mecánicos,
+aplica `migrations/009_mecanicos_asistencia_trabajos.sql` en la base de datos
+antes de iniciar el servidor. Cada asistencia guarda fecha y horas de entrada
+y salida dentro del horario del taller (lunes a viernes, 08:00 a 17:00;
+sábados, 08:00 a 14:00). Después aplica
+`migrations/010_ventas_mecanico_servicios.sql` para asociar ventas con citas y
+guardar sus servicios. El calendario mensual permite registrar asistencia y
+consultar los trabajos de cada día desde las ventas no canceladas asociadas a
+citas del mecánico. La liquidación mensual suma los subtotales de esos
+servicios únicamente en los días con asistencia; no incluye repuestos.
+Si `agendamiento.id_mecanico` tiene una clave foránea heredada hacia
+`usuarios.id_usuario`, aplica `migrations/011_agendamiento_mecanicos_fk.sql`
+para enlazar las citas con `mecanicos.id_mecanico` y conservar las asignaciones
+de mecánicos existentes.
 
 ## 2. Ejecutar
 

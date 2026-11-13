@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { emptyForm } from "../services/clientesData";
-import { createCliente, getClientes, updateCliente } from "../services/clientesService";
+import { createCliente, deleteCliente, getClientes, updateCliente } from "../services/clientesService";
 
 const itemsPerPage = 10;
 
@@ -179,12 +179,11 @@ export function useClientes() {
     if (!selectedCliente) return;
     setError("");
     try {
-      const actualizado = await updateCliente(selectedCliente.id, { ...selectedCliente, estado: "anulado" });
-      setClientes((current) => current.map((item) => item.id === actualizado.id
-        ? { ...item, ...actualizado, vehiculos: item.vehiculos, ultimaVisita: item.ultimaVisita }
-        : item));
-      setSelectedCliente(actualizado);
+      await deleteCliente(selectedCliente.id);
+      setClientes((current) => current.filter((item) => item.id !== selectedCliente.id));
+      setCurrentPage((page) => Math.min(page, Math.max(1, Math.ceil((sortedClientes.length - 1) / itemsPerPage))));
       setShowDeleteModal(false);
+      setSelectedCliente(null);
     } catch (requestError) {
       setError(requestError.message);
     }
