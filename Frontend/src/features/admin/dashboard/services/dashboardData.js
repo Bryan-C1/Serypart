@@ -43,12 +43,10 @@ export function getPeriodRange(view, anchorDate) {
   let startDate;
   let endDate;
 
-  if (view === "week") {
-    const daysSinceMonday = (anchor.getDay() + 6) % 7;
-    startDate = new Date(anchor);
-    startDate.setDate(startDate.getDate() - daysSinceMonday);
-    endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6);
+  if (view === "quarter") {
+    const startMonth = Math.floor(anchor.getMonth() / 3) * 3;
+    startDate = new Date(anchor.getFullYear(), startMonth, 1, 12);
+    endDate = new Date(anchor.getFullYear(), startMonth + 3, 0, 12);
   } else if (view === "year") {
     startDate = new Date(anchor.getFullYear(), 0, 1, 12);
     endDate = new Date(anchor.getFullYear(), 11, 31, 12);
@@ -65,7 +63,7 @@ export function getPeriodRange(view, anchorDate) {
 
 export function movePeriodDate(view, anchorDate, amount) {
   const date = parseLocalDate(anchorDate) || new Date();
-  if (view === "week") date.setDate(date.getDate() + amount * 7);
+  if (view === "quarter") date.setMonth(date.getMonth() + amount * 3);
   else if (view === "year") date.setFullYear(date.getFullYear() + amount);
   else date.setMonth(date.getMonth() + amount);
   return date;
@@ -76,6 +74,10 @@ export function getPeriodoLabel(view, range) {
   const end = parseLocalDate(range.endDate);
   if (!start || !end) return "";
   if (view === "year") return String(start.getFullYear());
+  if (view === "quarter") {
+    const quarter = Math.floor(start.getMonth() / 3) + 1;
+    return `Trimestre ${quarter} de ${start.getFullYear()}`;
+  }
   if (view === "month") {
     return new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" }).format(start);
   }
@@ -135,6 +137,19 @@ function getChartBuckets(view, range) {
     return buckets;
   }
 
+  if (view === "quarter") {
+    const quarterStartMonth = start.getMonth();
+    for (let monthOffset = 0; monthOffset < 3; monthOffset += 1) {
+      const date = new Date(start.getFullYear(), quarterStartMonth + monthOffset, 1, 12);
+      buckets.push({
+        date: formatLocalDate(date),
+        endDate: formatLocalDate(new Date(start.getFullYear(), quarterStartMonth + monthOffset + 1, 0, 12)),
+        label: new Intl.DateTimeFormat("es-CO", { month: "short" }).format(date),
+      });
+    }
+    return buckets;
+  }
+
   const dayCount = Math.round((end - start) / 86400000) + 1;
   for (let offset = 0; offset < dayCount; offset += 1) {
     const date = new Date(start);
@@ -142,9 +157,7 @@ function getChartBuckets(view, range) {
     buckets.push({
       date: formatLocalDate(date),
       endDate: formatLocalDate(date),
-      label: view === "week"
-        ? new Intl.DateTimeFormat("es-CO", { weekday: "short", day: "numeric" }).format(date)
-        : String(date.getDate()),
+      label: String(date.getDate()),
     });
   }
   return buckets;

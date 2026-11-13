@@ -18,7 +18,9 @@ export function StatsRow({ data, range, view }) {
                     ? `$${resumen[stat.metric].toLocaleString("es-CO", { maximumFractionDigits: 2 })}`
                     : resumen[stat.metric].toLocaleString("en-US")}
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">{view === "week" ? "En la semana" : view === "year" ? "En el año" : "En el mes"}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {view === "year" ? "En el año" : view === "quarter" ? "En el trimestre" : "En el mes"}
+                </p>
               </div>
               <div className={`${stat.color} p-3 rounded-lg`}>
                 <Icon className="w-6 h-6 text-white" />

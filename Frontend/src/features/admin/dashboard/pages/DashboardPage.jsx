@@ -18,8 +18,8 @@ import {
 } from "../services/dashboardData";
 
 const periodViews = [
-  { value: "week", label: "Semana" },
   { value: "month", label: "Mes" },
+  { value: "quarter", label: "Trimestre" },
   { value: "year", label: "Año" },
 ];
 
