@@ -1,13 +1,13 @@
 import { useId, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { getServicesByPeriod, getPeriodoLabel } from "../services/dashboardData";
+import { getServicesByPeriod } from "../services/dashboardData";
 
 const PASTEL_COLORS = ["#60A5FA", "#6DD5AE", "#F48FA8", "#F5C96B"];
 
-export function ServicesPieChart({ periodo }) {
+export function ServicesPieChart({ sales, range, periodLabel }) {
   const [limite, setLimite] = useState("todos");
   const gradientPrefix = useId().replace(/:/g, "");
-  const datosOrdenados = getServicesByPeriod(periodo).sort((a, b) => b.value - a.value);
+  const datosOrdenados = getServicesByPeriod(sales, range);
   const datosFiltrados = limite === "todos" ? datosOrdenados : datosOrdenados.slice(0, Number(limite));
 
   return (
@@ -15,7 +15,7 @@ export function ServicesPieChart({ periodo }) {
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h3 className="font-semibold">Servicios Más Solicitados</h3>
-          <p className="text-xs text-muted-foreground mt-1">{getPeriodoLabel(periodo)}</p>
+          <p className="text-xs text-muted-foreground mt-1 capitalize">{periodLabel}</p>
         </div>
         <select
           aria-label="Filtrar servicios por cantidad"
@@ -30,8 +30,13 @@ export function ServicesPieChart({ periodo }) {
         </select>
       </div>
       <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+        {datosFiltrados.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            No hay servicios vendidos en este período.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
             <defs>
               {PASTEL_COLORS.map((color, index) => (
                 <linearGradient
@@ -82,8 +87,9 @@ export function ServicesPieChart({ periodo }) {
               ))}
             </Pie>
             <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
+            </PieChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

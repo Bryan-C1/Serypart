@@ -338,9 +338,11 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
     <ModalWrapper
       title={`Checklist y liquidación · ${mecanico.nombre} ${mecanico.apellido || ""}`}
       onClose={onClose}
+      dialogClassName="!max-w-6xl !h-[min(90vh,760px)] !overflow-hidden !flex !flex-col"
+      contentClassName="!flex-1 !min-h-0 !overflow-y-auto !p-3 sm:!p-4"
     >
-      <div className="space-y-6">
-        <section className="space-y-4 rounded-2xl border border-border bg-gradient-to-br from-slate-50 via-white to-sky-50 p-4 shadow-sm">
+      <div className="grid gap-3 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className="space-y-3 rounded-2xl border border-border bg-gradient-to-br from-slate-50 via-white to-sky-50 p-3 shadow-sm sm:p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary/70">Resumen</p>
@@ -372,14 +374,14 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1">
             {weekDays.map((day) => (
-              <div key={day} className="py-2 text-center text-[0.68rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div key={day} className="py-1 text-center text-[0.68rem] font-semibold uppercase tracking-wide text-muted-foreground">
                 {day}
               </div>
             ))}
             {calendarCells.map((cell) => {
-              if (!cell.date) return <div key={cell.key} className="h-16 rounded-xl border border-dashed border-transparent" />;
+              if (!cell.date) return <div key={cell.key} className="h-10 rounded-xl border border-dashed border-transparent" />;
               const isSelected = cell.date === selectedDate;
               const isToday = cell.date === formatLocalDate(new Date());
               const worked = asistenciasPorFecha.has(cell.date);
@@ -392,7 +394,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
                   onClick={() => selectDate(cell.date)}
                   aria-pressed={isSelected}
                   aria-label={`${cell.date}${worked ? ", trabajó" : ""}${hasSales ? ", tiene ventas" : ""}`}
-                  className={`relative min-h-16 rounded-xl border p-1.5 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                  className={`relative h-10 rounded-xl border p-1 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                     isSelected
                       ? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/20"
                       : worked
@@ -413,7 +415,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
               );
             })}
           </div>
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
               <Check className="h-3 w-3 stroke-[3]" />
               Asistencia guardada
@@ -425,12 +427,13 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
           </div>
         </section>
 
-        {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
-        {loading ? (
-          <div role="status" className="py-5 text-center text-muted-foreground">Cargando actividad del mes...</div>
-        ) : (
-          <>
-            <section className="space-y-4 rounded-2xl border border-border bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+        <div className="flex min-h-0 flex-col gap-3 xl:overflow-y-auto">
+          {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+          {loading ? (
+            <div role="status" className="py-5 text-center text-muted-foreground">Cargando actividad del mes...</div>
+          ) : (
+            <>
+            <section className="space-y-3 rounded-2xl border border-border bg-gradient-to-br from-slate-50 to-white p-3 shadow-sm sm:p-4">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="flex items-center gap-2 text-lg font-semibold">
                   <ClipboardCheck className="h-5 w-5 text-primary" />
@@ -500,7 +503,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
               </button>
             </section>
 
-            <section className="space-y-3">
+            <section className="space-y-2">
               <h3 className="font-semibold">Trabajos asociados a ventas del día</h3>
               {actividad.ventas.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
@@ -538,13 +541,13 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
                 <strong>{formatMoney(actividad.total_liquidacion_dia)}</strong>
               </div>
             </section>
-          </>
-        )}
-
-        <div className="flex justify-end border-t border-border pt-4">
-          <button type="button" onClick={onClose} className="rounded-lg border border-border px-5 py-2 hover:bg-accent">
-            Cerrar
-          </button>
+            <div className="flex justify-end border-t border-border pt-3">
+              <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent">
+                Cerrar
+              </button>
+            </div>
+            </>
+          )}
         </div>
       </div>
     </ModalWrapper>
