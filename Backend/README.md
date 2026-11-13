@@ -16,7 +16,9 @@ cp .env.example .env
 ```
 
 Edita `.env` con tus datos de conexión (usa `serypart.sql` para crear la
-base de datos e importar las tablas).
+base de datos e importar las tablas). Configura también `JWT_SECRET` con una
+clave aleatoria larga; esta variable es necesaria para iniciar sesión y validar
+los tokens. No compartas ni agregues tu archivo `.env` al repositorio.
 
 Después, ejecuta las migraciones pendientes en orden. Para habilitar
 asignaciones de mecánicos en citas, aplica
