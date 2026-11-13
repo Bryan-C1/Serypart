@@ -12,20 +12,16 @@
       <script>
         (function () {
           try {
-            var theme = localStorage.getItem("theme");
-            if (theme === "dark") {
-              document.documentElement.classList.add("dark");
+            var theme = localStorage.getItem("serypart-theme");
+            if (theme !== "light" && theme !== "dark") {
+              theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
             }
+            document.documentElement.setAttribute("data-theme", theme);
           } catch (e) {}
         })();
       </script>
-<<<<<<< HEAD
-      <script type="module" crossorigin src="/assets/index-BMs_LnPx.js"></script>
-      <link rel="stylesheet" crossorigin href="/assets/index-Dfi4Voah.css">
-=======
-      <script type="module" crossorigin src="/assets/index-CABEqPqe.js"></script>
-      <link rel="stylesheet" crossorigin href="/assets/index-B50Lhh6R.css">
->>>>>>> Camilo
+      <script type="module" crossorigin src="/assets/index--rqy9gJS.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/index-BCtKbnCB.css">
     </head>
 
     <body>

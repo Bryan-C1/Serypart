@@ -397,6 +397,9 @@ export function FormVenta({ formData, setFormData }) {
                 </option>
               ))}
             </SearchableSelect>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Los servicios de la venta se atribuyen al mecánico asignado a esta cita y aparecen en su liquidación.
+            </p>
           </div>
         )}
         <div>
@@ -500,7 +503,7 @@ export function FormVenta({ formData, setFormData }) {
               <option value="">Seleccionar servicio</option>
               {serviciosDisponibles
                 .filter((servicio) => !items.some((item) => item.id_servicio === servicio.id))
-                .map((servicio) => <option key={servicio.id} value={servicio.id}>{servicio.nombre}</option>)}
+                .map((servicio) => <option key={servicio.id} value={servicio.id}>{servicio.codigo ? `${servicio.codigo} · ` : ""}{servicio.nombre}</option>)}
             </SearchableSelect>
             <input
               type="number"
@@ -566,7 +569,7 @@ export function FormVenta({ formData, setFormData }) {
               </thead>
               <tbody className="divide-y divide-border">
                 {items.map((it) => (
-                  <tr key={`${it.id_detalle_venta}-${it.id_repuesto}`}>
+                  <tr key={`${it.tipo}-${it.id_detalle_venta}`}>
                     <td className="px-3 py-2">{it.nombre}</td>
                     <td className="px-3 py-2">{it.cantidad}</td>
                     <td className="px-3 py-2">${Number(it.precio_unitario).toFixed(2)}</td>

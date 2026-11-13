@@ -16,17 +16,17 @@ export function VentasTrendLineChart({ datosGrafica, periodoSeleccionado }) {
       </div>
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={datosGrafica}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="etiqueta" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="etiqueta" tick={{ fontSize: 12, fill: "var(--text-muted)" }} />
+          <YAxis tick={{ fontSize: 12, fill: "var(--text-muted)" }} />
           <Tooltip
-            contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+            contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text)" }}
             formatter={(value) => `$${value.toFixed(2)}`}
           />
-          <Legend />
-          <Line type="monotone" dataKey="ventas" stroke="#1E40AF" strokeWidth={2} name="Ventas" />
-          <Line type="monotone" dataKey="costos" stroke="#DC2626" strokeWidth={2} name="Costos" />
-          <Line type="monotone" dataKey="ganancia" stroke="#059669" strokeWidth={2} name="Ganancia" />
+          <Legend wrapperStyle={{ color: "var(--text)" }} />
+          <Line type="monotone" dataKey="ventas" stroke="var(--primary)" strokeWidth={2} name="Ventas" />
+          <Line type="monotone" dataKey="costos" stroke="var(--danger)" strokeWidth={2} name="Costos" />
+          <Line type="monotone" dataKey="ganancia" stroke="var(--success)" strokeWidth={2} name="Ganancia" />
         </LineChart>
       </ResponsiveContainer>
     </div>

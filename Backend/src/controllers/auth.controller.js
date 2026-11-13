@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { getJwtSecret } = require('../config/jwt-secret');
 
 function normalizePasswordHash(value) {
   if (Buffer.isBuffer(value)) return value.toString('utf8');
@@ -73,7 +74,7 @@ async function login(req, res, next) {
 
     const token = jwt.sign(
       { id_usuario: usuario.id_usuario, id_rol: usuario.id_rol, email: usuario.email },
-      process.env.JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '8h' }
     );
 

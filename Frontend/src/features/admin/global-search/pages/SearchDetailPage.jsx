@@ -67,13 +67,14 @@ function DetailFields({ record }) {
 
 function ClientProfile({ profile }) {
   const [expandedVehicle, setExpandedVehicle] = useState(null);
+  const [expandedHistorySale, setExpandedHistorySale] = useState(null);
   const { cliente, vehiculos, citas, ventas, historialVehiculos } = profile;
   const fullName = `${cliente.nombre || ""} ${cliente.apellido || ""}`.trim();
   const sections = [
     { title: "Vehículos", icon: Car, items: vehiculos, empty: "Este cliente todavía no tiene vehículos registrados.", render: (item) => `${item.placa || "Sin placa"} · ${[item.marca, item.modelo, item.anio || item.año, item.color].filter(Boolean).join(" · ")}` },
     { title: "Citas", icon: CalendarDays, items: citas, empty: "No hay citas registradas para este cliente.", render: (item) => `${item.fecha_cita || "Fecha pendiente"} ${item.hora_cita || ""} · ${item.servicios || "Servicio sin especificar"} · ${item.placa || ""} · ${item.estado || ""}` },
     { title: "Ventas", icon: CreditCard, items: ventas, empty: "Este cliente todavía no tiene ventas registradas.", render: (item) => `Venta #${item.id_venta} · ${item.fecha_venta || ""} · $${item.total ?? 0} · ${item.estado || ""}` },
-    { title: "Historial de vehículos", icon: ClipboardList, items: historialVehiculos, empty: "No hay historial de mantenimiento disponible.", render: (item) => `${item.fecha || ""} · ${item.placa || ""} · ${item.descripcion || ""}` },
+    { title: "Historial de vehículos", icon: ClipboardList, items: historialVehiculos, empty: "No hay historial de mantenimiento disponible.", render: (item) => `${String(item.fecha || "").slice(0, 10)} · ${item.placa || ""} · ${item.descripcion || ""}` },
   ];
 
   return (
@@ -100,9 +101,68 @@ function ClientProfile({ profile }) {
               {items.map((item, index) => {
                 const vehicleId = item.id_vehiculo ?? item.id;
                 const isExpanded = title === "Vehículos" && expandedVehicle === vehicleId;
+                const saleId = title === "Historial de vehículos"
+                  ? item.descripcion?.match(/Venta\s*#(\d+)/i)?.[1]
+                  : null;
+                const relatedSale = saleId
+                  ? ventas.find((sale) => String(sale.id_venta) === saleId)
+                  : null;
+                const historyKey = item.id_historial_vehiculos ?? `history-${index}`;
+                const isSaleExpanded = relatedSale
+                  && expandedHistorySale === historyKey;
                 return (
                   <li key={vehicleId ?? item.id_venta ?? item.id_agendamiento ?? item.id_historial_vehiculos ?? index} className="rounded-lg bg-background p-3 text-sm">
-                    <p className="font-medium">{render(item)}</p>
+                    {relatedSale ? (
+                      <button
+                        type="button"
+                        aria-expanded={Boolean(isSaleExpanded)}
+                        onClick={() => setExpandedHistorySale((current) => (
+                          current === historyKey ? null : historyKey
+                        ))}
+                        className="flex w-full items-center justify-between gap-3 text-left font-medium hover:text-primary"
+                      >
+                        <span>{render(item)}</span>
+                        {isSaleExpanded
+                          ? <ChevronUp className="h-4 w-4 shrink-0" />
+                          : <ChevronDown className="h-4 w-4 shrink-0" />}
+                      </button>
+                    ) : <p className="font-medium">{render(item)}</p>}
+                    {isSaleExpanded && (
+                      <div className="mt-3 space-y-3 border-t border-border pt-3">
+                        <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div><dt className="text-xs text-muted-foreground">Fecha de venta</dt><dd>{relatedSale.fecha_venta || "—"}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Estado</dt><dd>{relatedSale.estado || "—"}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Método de pago</dt><dd>{relatedSale.metodo_pago || "—"}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Mecánico asignado</dt><dd>{[relatedSale.mecanico_nombre, relatedSale.mecanico_apellido].filter(Boolean).join(" ") || "Sin mecánico asignado"}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Total</dt><dd>${Number(relatedSale.total || 0).toFixed(2)}</dd></div>
+                        </dl>
+                        {relatedSale.observaciones_cita?.trim() && (
+                          <div className="rounded-md border border-border bg-card p-3">
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Observación de la cita</p>
+                            <p className="mt-1 whitespace-pre-wrap">{relatedSale.observaciones_cita}</p>
+                          </div>
+                        )}
+                        {relatedSale.items?.length > 0 ? (
+                          <div>
+                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Servicios y repuestos de la venta</p>
+                            <ul className="space-y-2">
+                              {relatedSale.items.map((line, lineIndex) => (
+                                <li key={line.id_detalle_venta || `${line.tipo}-${lineIndex}`} className="flex flex-wrap justify-between gap-2 rounded-md border border-border bg-card p-2">
+                                  <span>
+                                    <span className="font-medium">{line.tipo === "servicio" || line.id_servicio != null ? "Servicio" : "Repuesto"}:</span>{" "}
+                                    {line.servicio || line.repuesto || "Artículo"}
+                                    {" × "}{line.cantidad}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    ${Number(line.subtotal ?? Number(line.precio_unitario || 0) * Number(line.cantidad || 0)).toFixed(2)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : <p className="text-muted-foreground">Esta venta no tiene conceptos detallados.</p>}
+                      </div>
+                    )}
                     {title === "Vehículos" && (
                       <>
                         <button

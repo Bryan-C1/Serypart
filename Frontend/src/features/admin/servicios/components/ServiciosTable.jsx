@@ -26,7 +26,10 @@ export function ServiciosTable({ servicios, onToggleEstado, onVer, onEditar, onE
               <tr key={s.id} onClick={() => onVer(s)} className="cursor-pointer hover:bg-accent/50 transition-colors">
                 <td className="py-4">
                   <div>
-                    <p className="font-medium">{s.nombre}</p>
+                    <p className="flex items-center gap-2 font-medium">
+                      <span>{s.nombre}</span>
+                      {s.codigo && <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{s.codigo}</span>}
+                    </p>
                     <p className="text-sm text-muted-foreground line-clamp-1">{s.descripcion}</p>
                   </div>
                 </td>

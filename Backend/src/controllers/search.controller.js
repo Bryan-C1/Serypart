@@ -217,9 +217,14 @@ async function getClientDetails(req, res, next) {
       [id, clients[0].id_usuario || -1]
     );
     const [sales] = await pool.query(
-      `SELECT v.id_venta, v.fecha_venta, v.total, v.estado, mp.nombre AS metodo_pago
+      `SELECT v.id_venta, v.id_agendamiento, v.fecha_venta, v.total, v.estado,
+              mp.nombre AS metodo_pago, um.nombre AS mecanico_nombre,
+              um.apellido AS mecanico_apellido, a.observaciones AS observaciones_cita
          FROM venta v
          LEFT JOIN metodo_pago mp ON mp.id_metodo_pago = v.id_metodo_pago
+         LEFT JOIN agendamiento a ON a.id_agendamiento = v.id_agendamiento
+         LEFT JOIN mecanicos m ON m.id_mecanico = a.id_mecanico
+         LEFT JOIN usuarios um ON um.id_usuario = m.id_usuario
         WHERE v.id_cliente = ? OR v.id_usuario = ?
         ORDER BY v.fecha_venta DESC, v.id_venta DESC`,
       [id, clients[0].id_usuario || -1]
@@ -242,10 +247,13 @@ async function getClientDetails(req, res, next) {
 
     const salesWithItems = await Promise.all(sales.map(async (sale) => {
       const [items] = await pool.query(
-        `SELECT dv.id_detalle_venta, dv.id_repuesto, r.nombre AS repuesto,
+        `SELECT dv.id_detalle_venta, dv.id_repuesto, dv.id_servicio,
+                r.nombre AS repuesto, COALESCE(dv.nombre_servicio, s.nombre) AS servicio,
+                CASE WHEN dv.id_repuesto IS NULL THEN 'servicio' ELSE 'repuesto' END AS tipo,
                 dv.cantidad, dv.precio_unitario, dv.subtotal
            FROM detalle_venta dv
            LEFT JOIN repuestos r ON r.id_repuesto = dv.id_repuesto
+           LEFT JOIN servicios s ON s.id_servicio = dv.id_servicio
           WHERE dv.id_venta = ?`,
         [sale.id_venta]
       );
@@ -276,14 +284,21 @@ async function getEntityDetails(req, res, next) {
     if (type === 'ventas' || type === 'compras') {
       const table = type === 'ventas' ? 'detalle_venta' : 'detalle_compra';
       const foreignKey = type === 'ventas' ? 'id_venta' : 'id_compra';
-      const [items] = await pool.query(
-        `SELECT d.id_repuesto, r.nombre AS repuesto, d.cantidad,
-                d.precio_unitario, d.subtotal
-           FROM ${table} d
-           LEFT JOIN repuestos r ON r.id_repuesto = d.id_repuesto
-          WHERE d.${foreignKey} = ?`,
-        [id]
-      );
+      const itemsQuery = type === 'ventas'
+        ? `SELECT d.id_repuesto, d.id_servicio,
+                  r.nombre AS repuesto, COALESCE(d.nombre_servicio, s.nombre) AS servicio,
+                  CASE WHEN d.id_repuesto IS NULL THEN 'servicio' ELSE 'repuesto' END AS tipo,
+                  d.cantidad, d.precio_unitario, d.subtotal
+             FROM ${table} d
+             LEFT JOIN repuestos r ON r.id_repuesto = d.id_repuesto
+             LEFT JOIN servicios s ON s.id_servicio = d.id_servicio
+            WHERE d.${foreignKey} = ?`
+        : `SELECT d.id_repuesto, r.nombre AS repuesto, d.cantidad,
+                  d.precio_unitario, d.subtotal
+             FROM ${table} d
+             LEFT JOIN repuestos r ON r.id_repuesto = d.id_repuesto
+            WHERE d.${foreignKey} = ?`;
+      const [items] = await pool.query(itemsQuery, [id]);
       record.items = items;
     }
     res.json(record);

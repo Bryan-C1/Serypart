@@ -1,8 +1,7 @@
-import { Phone, Eye, Edit, Ban } from "lucide-react";
+import { Phone, Eye, Edit, Ban, ClipboardCheck } from "lucide-react";
 import { activeInactiveStatusOptions, annulledStatusOption, EntityStatusSelect } from "../../components/EntityStatusSelect";
-import { formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
 
-export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEditar, onAnular }) {
+export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEditar, onAnular, onActividad }) {
   const mechanicStatusOptions = [
     ...activeInactiveStatusOptions,
     { value: "vacaciones", label: "Vacaciones", className: "bg-warning/10 text-warning" },
@@ -18,8 +17,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
             <th className="pb-3 font-medium">Apellido</th>
             <th className="pb-3 font-medium">Teléfono</th>
             <th className="pb-3 font-medium">Dirección</th>
-            <th className="pb-3 font-medium">Turno</th>
-            <th className="pb-3 font-medium">Disponibilidad</th>
+            <th className="pb-3 font-medium">Especialidad</th>
             <th className="pb-3 font-medium">Estado</th>
             <th className="pb-3 font-medium text-right">Acciones</th>
           </tr>
@@ -27,7 +25,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
         <tbody className="divide-y divide-border">
           {mecanicos.length === 0 ? (
             <tr>
-              <td colSpan={10} className="py-10 text-center text-muted-foreground">No se encontraron mecánicos</td>
+              <td colSpan={9} className="py-10 text-center text-muted-foreground">No se encontraron mecánicos</td>
             </tr>
           ) : (
             mecanicos.map((m) => (
@@ -43,8 +41,7 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
                   </div>
                 </td>
                 <td className="py-4 text-sm">{m.direccion || "—"}</td>
-                <td className="py-4 text-sm">{m.turno || "—"}</td>
-                <td className="py-4 text-sm">{m.horarioDisponibilidad || formatHorariosPorDia(normalizeHorariosPorDia(m.horariosPorDia)) || "—"}</td>
+                <td className="py-4 text-sm">{m.especialidad || "—"}</td>
                 <td className="py-4">
                   <div onClick={(event) => event.stopPropagation()}>
                     <EntityStatusSelect
@@ -61,6 +58,9 @@ export function MecanicosTable({ mecanicos, onToggleEstado, onVerDetalles, onEdi
                   <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
                     <button onClick={() => onVerDetalles(m)} className="p-2 hover:bg-accent rounded-lg transition-colors" title="Ver detalles">
                       <Eye className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => onActividad(m)} className="p-2 hover:bg-accent rounded-lg transition-colors" title="Calendario de asistencia y liquidación mensual">
+                      <ClipboardCheck className="w-4 h-4" />
                     </button>
                     <button onClick={() => onEditar(m)} className="p-2 hover:bg-accent rounded-lg transition-colors" title="Editar">
                       <Edit className="w-4 h-4" />

@@ -16,7 +16,6 @@ function fromApi(mecanico) {
     email: mecanico.email || "",
     telefono: mecanico.telefono || "",
     especialidad: mecanico.especialidad || "General",
-    turno: mecanico.turno || "Completo",
     estado: mecanico.estado || "activo",
     notas: mecanico.notas || "",
   };
@@ -32,7 +31,6 @@ function toApi(mecanico) {
     email: mecanico.email,
     telefono: mecanico.telefono,
     especialidad: mecanico.especialidad,
-    turno: mecanico.turno,
     estado: mecanico.estado,
     notas: mecanico.notas,
   };
@@ -43,6 +41,16 @@ export async function getMecanicos() {
   if (!Array.isArray(rows)) throw new Error("La API devolvió un formato inválido para los mecánicos.");
   mecanicosCache = rows.map(fromApi);
   return mecanicosCache;
+}
+
+export async function getMecanicosDisponiblesPorAsistencia(fecha) {
+  const rows = await apiRequest(`/mecanicos/disponibles?fecha=${encodeURIComponent(fecha)}`);
+  if (!Array.isArray(rows)) throw new Error("La API devolvió un formato inválido para las asistencias.");
+  return rows.map((row) => ({
+    id_mecanico: Number(row.id_mecanico),
+    hora_inicio: String(row.hora_inicio || "").slice(0, 5),
+    hora_fin: String(row.hora_fin || "").slice(0, 5),
+  }));
 }
 
 export async function createMecanico(mecanico) {
@@ -71,4 +79,30 @@ export async function deleteMecanico(id) {
 export function getMecanicoNombre(id) {
   const mecanico = mecanicosCache.find((item) => String(item.id) === String(id));
   return mecanico ? [mecanico.nombre, mecanico.apellido].filter(Boolean).join(" ") : "—";
+}
+
+export async function getActividadMensual(id, inicioMes, fechaSeleccionada) {
+  const params = new URLSearchParams({
+    mes: inicioMes,
+    fecha: fechaSeleccionada,
+  });
+  return apiRequest(`/mecanicos/${id}/actividad-mensual?${params}`);
+}
+
+export async function createAsistenciaMecanico(id, asistencia) {
+  return apiRequest(`/mecanicos/${id}/asistencias`, {
+    method: "POST",
+    body: asistencia,
+  });
+}
+
+export async function updateAsistenciaMecanico(id, idAsistencia, asistencia) {
+  return apiRequest(`/mecanicos/${id}/asistencias/${idAsistencia}`, {
+    method: "PUT",
+    body: asistencia,
+  });
+}
+
+export async function deleteAsistenciaMecanico(id, idAsistencia) {
+  return apiRequest(`/mecanicos/${id}/asistencias/${idAsistencia}`, { method: "DELETE" });
 }

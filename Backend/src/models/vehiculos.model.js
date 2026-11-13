@@ -5,7 +5,15 @@ const pool = require('../config/db');
 const TABLE = 'vehiculos';
 const PK = 'id_vehiculo';
 
+async function ensureClientRelationColumns(connection = pool) {
+  const [columns] = await connection.query("SHOW COLUMNS FROM vehiculos LIKE 'id_cliente'");
+  if (columns.length === 0) {
+    await connection.query('ALTER TABLE vehiculos ADD COLUMN id_cliente INT NULL');
+  }
+}
+
 async function getAll() {
+  await ensureClientRelationColumns();
   const [rows] = await pool.query(
     `SELECT v.*, COALESCE(v.id_cliente, cliente_usuario.id_cliente) AS id_cliente_catalogo,
             m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
@@ -22,6 +30,7 @@ async function getAll() {
 }
 
 async function getById(id) {
+  await ensureClientRelationColumns();
   const [rows] = await pool.query(
     `SELECT v.*, COALESCE(v.id_cliente, cliente_usuario.id_cliente) AS id_cliente_catalogo,
             m.nombre AS marca, md.nombre AS modelo, tv.nombre AS tipo_vehiculo,
@@ -39,6 +48,7 @@ async function getById(id) {
 }
 
 async function create(data) {
+  await ensureClientRelationColumns();
   const { id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado, fecha_registro } = data;
   const [clients] = await pool.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
   if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
@@ -50,6 +60,7 @@ async function create(data) {
 }
 
 async function update(id, data) {
+  await ensureClientRelationColumns();
   const { id_cliente, placa, id_marca, id_modelo, anio, color, id_tipo_vehiculo, estado } = data;
   const [clients] = await pool.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [id_cliente]);
   if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');

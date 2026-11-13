@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { createServicio } from "../../servicios/services/serviciosService";
+import { getMecanicosDisponiblesPorAsistencia } from "../../mecanicos/services/mecanicosService";
 import { reportInvalidField } from "../../../../shared/utils/inputValidation";
 import { SearchableSelect } from "../../../../shared/ui/searchable-select";
 
@@ -15,6 +16,9 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
   const [servicioNuevo, setServicioNuevo] = useState({ nombre: "", descripcion: "", precio: "" });
   const [error, setError] = useState("");
   const [creandoServicio, setCreandoServicio] = useState(false);
+  const [asistenciasFecha, setAsistenciasFecha] = useState([]);
+  const [asistenciasLoading, setAsistenciasLoading] = useState(false);
+  const [asistenciasError, setAsistenciasError] = useState("");
   const clientes = catalogs.clientes;
   const vehiculos = catalogs.vehiculos;
 
@@ -40,7 +44,54 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
     if (open) onRefreshCatalogs();
   }, [open, onRefreshCatalogs]);
 
+  useEffect(() => {
+    if (!open || !/^\d{4}-\d{2}-\d{2}$/.test(form.fecha_cita)) {
+      setAsistenciasFecha([]);
+      setAsistenciasLoading(false);
+      setAsistenciasError("");
+      return undefined;
+    }
+
+    let active = true;
+    setAsistenciasFecha([]);
+    setAsistenciasLoading(true);
+    setAsistenciasError("");
+    getMecanicosDisponiblesPorAsistencia(form.fecha_cita)
+      .then((rows) => {
+        if (!active) return;
+        setAsistenciasFecha(rows);
+        setForm((current) => {
+          if (!current.id_mecanico) return current;
+          const attendance = rows.find((row) => row.id_mecanico === Number(current.id_mecanico));
+          const timeIsAvailable = attendance
+            && (!current.hora_cita
+              || (current.hora_cita >= attendance.hora_inicio && current.hora_cita < attendance.hora_fin));
+          return timeIsAvailable ? current : { ...current, id_mecanico: "" };
+        });
+      })
+      .catch((requestError) => {
+        if (active) setAsistenciasError(requestError.message);
+      })
+      .finally(() => {
+        if (active) setAsistenciasLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [open, form.fecha_cita]);
+
   const field = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+  const handleDateChange = (event) => {
+    setForm((current) => ({ ...current, fecha_cita: event.target.value, id_mecanico: "" }));
+  };
+  const handleTimeChange = (event) => {
+    const hora_cita = event.target.value;
+    setForm((current) => {
+      const attendance = asistenciasFecha.find((row) => row.id_mecanico === Number(current.id_mecanico));
+      const timeIsAvailable = !attendance || !hora_cita
+        || (hora_cita >= attendance.hora_inicio && hora_cita < attendance.hora_fin);
+      return { ...current, hora_cita, id_mecanico: timeIsAvailable ? current.id_mecanico : "" };
+    });
+  };
 
   if (!open) return null;
 
@@ -100,6 +151,11 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
   const vehiculosCliente = vehiculos.filter((vehiculo) => String(vehiculo.id_cliente) === String(form.id_cliente));
   const vehiculoSeleccionado = vehiculos.find((vehicle) => String(vehicle.id) === String(form.id_vehiculo));
   const mecanicosDisponibles = catalogs.mecanicos.filter((mecanico) => {
+    const attendance = asistenciasFecha.find((row) => row.id_mecanico === Number(mecanico.id));
+    if (!attendance || asistenciasLoading || asistenciasError) return false;
+    if (form.hora_cita && (form.hora_cita < attendance.hora_inicio || form.hora_cita >= attendance.hora_fin)) {
+      return false;
+    }
     const ocupado = citas.some((cita) =>
       String(cita.id_mecanico) === String(mecanico.id)
       && String(cita.id) !== String(initialData?.id)
@@ -137,7 +193,7 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
                 <option value="">Seleccionar servicio</option>
                 {serviciosDisponibles
                   .filter((servicio) => !serviciosSeleccionados.some((s) => s.id === servicio.id))
-                  .map((servicio) => <option key={servicio.id} value={servicio.id}>{servicio.nombre}</option>)}
+                  .map((servicio) => <option key={servicio.id} value={servicio.id}>{servicio.codigo ? `${servicio.codigo} · ` : ""}{servicio.nombre}</option>)}
               </SearchableSelect>
               <button
                 type="button"
@@ -211,19 +267,32 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Fecha de la Cita</label>
-              <input type="date" value={form.fecha_cita} onChange={field("fecha_cita")} required className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input type="date" value={form.fecha_cita} onChange={handleDateChange} required className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring" />
+              {asistenciasLoading && <p role="status" className="mt-1 text-xs text-muted-foreground">Consultando asistencias registradas para esta fecha...</p>}
+              {asistenciasError && <p role="alert" className="mt-1 text-xs text-destructive">No se pudo consultar la asistencia: {asistenciasError}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Hora de la Cita</label>
-              <input type="time" value={form.hora_cita} onChange={field("hora_cita")} required className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input type="time" value={form.hora_cita} onChange={handleTimeChange} required className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Mecánico disponible *</label>
-              <SearchableSelect value={form.id_mecanico} onChange={field("id_mecanico")} required disabled={catalogsLoading || Boolean(catalogsError)} placeholder={catalogsLoading ? "Cargando mecánicos..." : "Seleccionar mecánico"} className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring">
+              <SearchableSelect value={form.id_mecanico} onChange={field("id_mecanico")} required disabled={catalogsLoading || Boolean(catalogsError) || asistenciasLoading || Boolean(asistenciasError) || !form.fecha_cita} placeholder={asistenciasLoading ? "Consultando asistencias..." : "Seleccionar mecánico"} className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Seleccionar mecánico</option>
-                {mecanicosDisponibles.map((mecanico) => <option key={mecanico.id} value={mecanico.id}>{mecanico.nombre} {mecanico.apellido || ""}{mecanico.estado !== "activo" ? " (asignado a esta cita)" : ""}</option>)}
+                {mecanicosDisponibles.map((mecanico) => {
+                  const attendance = asistenciasFecha.find((row) => row.id_mecanico === Number(mecanico.id));
+                  return <option key={mecanico.id} value={mecanico.id}>{mecanico.nombre} {mecanico.apellido || ""} · {attendance.hora_inicio}–{attendance.hora_fin}</option>;
+                })}
               </SearchableSelect>
-              {mecanicosDisponibles.length === 0 && <p className="mt-1 text-sm text-muted-foreground">No hay mecánicos disponibles. Completa o cancela una cita para liberar al mecánico.</p>}
+              {mecanicosDisponibles.length === 0 && !asistenciasLoading && !asistenciasError && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {asistenciasFecha.length === 0
+                    ? "No hay mecánicos con asistencia registrada para esta fecha."
+                    : form.hora_cita
+                      ? "No hay mecánicos disponibles dentro de su horario de asistencia para esta hora."
+                      : "No hay mecánicos disponibles para esta fecha. Revisa sus citas pendientes."}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Estado</label>
@@ -263,7 +332,7 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
           </button>
           <button
             onClick={() => reportInvalidField() && handleProgramar()}
-            disabled={saving || catalogsLoading || serviciosSeleccionados.length === 0 || !form.id_cliente || !form.id_vehiculo || !form.fecha_cita || !form.hora_cita || !form.id_mecanico}
+            disabled={saving || catalogsLoading || asistenciasLoading || Boolean(asistenciasError) || serviciosSeleccionados.length === 0 || !form.id_cliente || !form.id_vehiculo || !form.fecha_cita || !form.hora_cita || !form.id_mecanico}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Guardando..." : initialData ? "Guardar cambios" : "Programar Cita"}

@@ -4,6 +4,10 @@ import { emptyForm, guardarVehiculos } from "../services/vehiculosData";
 import { getClientesActivos } from "../../clientes/services/clientesService";
 import { createVehiculo, getTiposVehiculo, getVehiculos, updateVehiculo } from "../services/vehiculosService";
 
+function hasSelection(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
 export function useVehiculos() {
   const [searchParams] = useSearchParams();
   const clienteId = searchParams.get("cliente");
@@ -139,7 +143,13 @@ export function useVehiculos() {
   }
 
   async function handleGuardar() {
-    if (!/^[A-Z]{3}-[0-9]{3}$/.test(form.placa) || !form.id_cliente || !form.id_marca || !form.id_modelo || !form.id_tipo_vehiculo) return;
+    if (
+      !/^[A-Z]{3}-[0-9]{3}$/.test(form.placa)
+      || !hasSelection(form.id_cliente)
+      || !hasSelection(form.id_marca)
+      || !hasSelection(form.id_modelo)
+      || !hasSelection(form.id_tipo_vehiculo)
+    ) return;
     setActionError("");
     try {
       let savedVehicle;

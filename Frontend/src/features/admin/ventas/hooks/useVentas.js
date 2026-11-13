@@ -5,6 +5,10 @@ import { createVenta, getMetodosPago, getVentas, updateVenta } from "../services
 
 const itemsPerPage = 8;
 
+function hasValue(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
 export function useVentas() {
   const [ventas, setVentas] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,7 +84,12 @@ export function useVentas() {
   };
 
   const handleGuardarNuevo = async () => {
-    if (!formData.id_cliente || !formData.id_metodo_pago || !formData.fecha_venta || !formData.items?.length) {
+    if (
+      !hasValue(formData.id_cliente)
+      || !hasValue(formData.id_metodo_pago)
+      || !hasValue(formData.fecha_venta)
+      || !formData.items?.length
+    ) {
       setError("Completa el cliente, la fecha, el método de pago y agrega al menos un concepto.");
       return;
     }
@@ -130,7 +139,7 @@ export function useVentas() {
 
   const handleGuardarEdicion = async () => {
     if (!selected) return;
-    if (!formData.id_cliente || !formData.id_metodo_pago || !formData.fecha_venta) {
+    if (!hasValue(formData.id_cliente) || !hasValue(formData.id_metodo_pago) || !hasValue(formData.fecha_venta)) {
       setError("Completa el cliente, la fecha y el método de pago.");
       return;
     }

@@ -16,9 +16,9 @@ export function PasswordField({ label = "Contraseña", ...props }) {
           type="button"
           onClick={toggle}
           aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] transition-colors hover:text-[#1f2937]"
         >
-          {visible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          {visible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
       }
       {...props}

@@ -100,18 +100,20 @@ export default function VentasPage() {
         <ModalWrapper title="Detalles de la Venta" onClose={closeAll}>
           <div className="grid grid-cols-2 gap-4">
             <DetailField label="Cliente" value={selected.nombre_usuario || getUsuarioNombre(selected.id_cliente)} />
+            <DetailField label="Mecánico asignado" value={selected.nombre_mecanico || "Sin mecánico asignado"} />
             <DetailField label="Método de Pago" value={selected.nombre_metodo_pago || getMetodoPagoNombre(selected.id_metodo_pago)} />
             <DetailField label="Total" value={`$${Number(selected.total).toFixed(2)}`} />
             <DetailField label="Estado" value={estadoConfig[selected.estado]?.label || selected.estado} />
+            <DetailField label="Cita" value={selected.id_agendamiento ? `#${selected.id_agendamiento}` : "Sin cita asociada"} />
           </div>
           <div className="mt-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Repuestos Vendidos</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Conceptos de la venta</p>
             {selected.items && selected.items.length > 0 ? (
               <div className="border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-accent/50">
                     <tr className="text-left">
-                      <th className="px-3 py-2 font-medium">Repuesto</th>
+                      <th className="px-3 py-2 font-medium">Concepto</th>
                       <th className="px-3 py-2 font-medium">Cantidad</th>
                       <th className="px-3 py-2 font-medium">Precio Unit.</th>
                       <th className="px-3 py-2 font-medium text-right">Subtotal</th>
@@ -119,11 +121,11 @@ export default function VentasPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {selected.items.map((it) => (
-                      <tr key={it.id_repuesto}>
-                        <td className="px-3 py-2">{it.nombre}</td>
+                      <tr key={`${it.tipo}-${it.id_detalle_venta}`}>
+                        <td className="px-3 py-2">{it.tipo === "servicio" ? "Servicio" : "Repuesto"} · {it.nombre}</td>
                         <td className="px-3 py-2">{it.cantidad}</td>
                         <td className="px-3 py-2">${Number(it.precio_unitario).toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">${(Number(it.precio_unitario) * Number(it.cantidad)).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right">${Number(it.subtotal || 0).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -140,7 +142,7 @@ export default function VentasPage() {
             )}
             {selected.otherConceptsTotal > 0 && (
               <p className="mt-3 text-right text-sm text-muted-foreground">
-                Servicios y otros conceptos incluidos en el total: ${selected.otherConceptsTotal.toFixed(2)}
+                Otros conceptos no desglosados incluidos en el total: ${selected.otherConceptsTotal.toFixed(2)}
               </p>
             )}
           </div>

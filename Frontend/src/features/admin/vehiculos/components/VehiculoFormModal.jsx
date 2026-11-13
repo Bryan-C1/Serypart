@@ -1,5 +1,6 @@
 import { ChevronDown, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { onlyDigits, onlyPlate, reportInvalidField } from "../../../../shared/utils/inputValidation";
 import {
   ensureDatabaseMake,
@@ -82,6 +83,10 @@ function closestColorName(hex) {
   }, { name: "Color personalizado", distance: Infinity }).name;
 }
 
+function hasSelection(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
 export function VehiculoFormModal({
   modal,
   form,
@@ -114,7 +119,11 @@ export function VehiculoFormModal({
   const [saturation, setSaturation] = useState(0);
   const [brightness, setBrightness] = useState(1);
   const colorWidgetRef = useRef(null);
+  const colorTriggerRef = useRef(null);
+  const colorPickerRef = useRef(null);
   const saturationFieldRef = useRef(null);
+  const formModalRef = useRef(null);
+  const [colorPickerPosition, setColorPickerPosition] = useState({ top: 16, left: 16, maxHeight: 400 });
 
   useEffect(() => {
     if (modal !== "crear" && modal !== "editar") return undefined;
@@ -179,7 +188,7 @@ export function VehiculoFormModal({
 
   const handleModelChange = async (event) => {
     const model = modelos.find((item) => String(item.Model_ID) === event.target.value);
-    if (!model || !form.id_marca) return;
+    if (!model || !hasSelection(form.id_marca)) return;
     setSelectedModelId(String(model.Model_ID));
     setCatalogError("");
     setSelectionSaving(true);
@@ -198,7 +207,12 @@ export function VehiculoFormModal({
   useEffect(() => {
     if (!colorPickerOpen) return undefined;
     const closeIfOutside = (event) => {
-      if (!colorWidgetRef.current?.contains(event.target)) setColorPickerOpen(false);
+      if (
+        !colorWidgetRef.current?.contains(event.target)
+        && !colorPickerRef.current?.contains(event.target)
+      ) {
+        setColorPickerOpen(false);
+      }
     };
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setColorPickerOpen(false);
@@ -211,9 +225,62 @@ export function VehiculoFormModal({
     };
   }, [colorPickerOpen]);
 
+  useLayoutEffect(() => {
+    if (!colorPickerOpen) return undefined;
+    const updatePosition = () => {
+      const trigger = colorTriggerRef.current;
+      const picker = colorPickerRef.current;
+      if (!trigger || !picker) return;
+
+      const triggerBounds = trigger.getBoundingClientRect();
+      const pickerBounds = picker.getBoundingClientRect();
+      const viewportPadding = 16;
+      const gap = 8;
+      const availableBelow = window.innerHeight - triggerBounds.bottom - gap - viewportPadding;
+      const availableAbove = triggerBounds.top - gap - viewportPadding;
+      const openAbove = pickerBounds.height > availableBelow && availableAbove > availableBelow;
+      const maxHeight = Math.max(
+        180,
+        openAbove ? Math.min(availableAbove, pickerBounds.height) : availableBelow,
+      );
+      const top = openAbove
+        ? Math.max(viewportPadding, triggerBounds.top - Math.min(pickerBounds.height, maxHeight) - gap)
+        : triggerBounds.bottom + gap;
+      const left = Math.max(
+        viewportPadding,
+        Math.min(triggerBounds.left, window.innerWidth - pickerBounds.width - viewportPadding),
+      );
+
+      setColorPickerPosition({ top, left, maxHeight });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [colorPickerOpen]);
+
   if (modal !== "crear" && modal !== "editar") return null;
 
   const selectedHex = form.colorHex || (/^#[\da-f]{6}$/i.test(form.color) ? form.color : legacyColorHex[form.color]) || "";
+  const saveDisabled = catalogLoading || modelLoading || selectionSaving || Boolean(catalogError)
+    || tiposVehiculoLoading || Boolean(tiposVehiculoError) || usuariosLoading || Boolean(usuariosError)
+    || !form.placa || !hasSelection(form.id_cliente) || !hasSelection(form.id_marca)
+    || !hasSelection(form.id_modelo) || !hasSelection(form.id_tipo_vehiculo);
+  const saveDisabledMessage = catalogError || tiposVehiculoError || usuariosError
+    || (catalogLoading && "Cargando el catálogo de marcas...")
+    || (modelLoading && "Cargando los modelos...")
+    || (selectionSaving && "Guardando la marca o el modelo seleccionado...")
+    || (usuariosLoading && "Cargando clientes...")
+    || (tiposVehiculoLoading && "Cargando tipos de vehículo...")
+    || (!form.placa && "Ingresa la placa del vehículo.")
+    || (!hasSelection(form.id_cliente) && "Selecciona un cliente.")
+    || (!hasSelection(form.id_marca) && "Selecciona una marca.")
+    || (!hasSelection(form.id_modelo) && "Selecciona un modelo.")
+    || (!hasSelection(form.id_tipo_vehiculo) && "Selecciona el tipo de vehículo.");
   const updateDraftFromHsv = (nextHue, nextSaturation, nextBrightness) => {
     const rgb = hsvToRgb(nextHue, nextSaturation, nextBrightness);
     setHue(nextHue);
@@ -301,7 +368,7 @@ export function VehiculoFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onInvalid={handleInvalidField} onInput={clearInvalidMessage}>
+      <div ref={formModalRef} className="bg-card border border-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onInvalid={handleInvalidField} onInput={clearInvalidMessage}>
         <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card">
           <h2 className="text-xl font-semibold">{modal === "crear" ? "Nuevo Vehículo" : "Editar Vehículo"}</h2>
           <button onClick={onClose} className="p-1 hover:bg-accent rounded-lg transition-colors">
@@ -394,8 +461,8 @@ export function VehiculoFormModal({
                 value={selectedModelId}
                 onChange={handleModelChange}
                 required={Boolean(form.id_marca)}
-                disabled={!form.id_marca || modelLoading || selectionSaving || Boolean(catalogError)}
-                placeholder={!form.id_marca ? "Selecciona primero una marca" : modelLoading ? "Cargando modelos..." : "Seleccionar modelo..."}
+                disabled={!hasSelection(form.id_marca) || modelLoading || selectionSaving || Boolean(catalogError)}
+                placeholder={!hasSelection(form.id_marca) ? "Selecciona primero una marca" : modelLoading ? "Cargando modelos..." : "Seleccionar modelo..."}
                 className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {modelos.map((modelo) => (
@@ -406,8 +473,9 @@ export function VehiculoFormModal({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Color</label>
-              <div ref={colorWidgetRef} className="relative">
+              <div ref={colorWidgetRef}>
                 <button
+                  ref={colorTriggerRef}
                   type="button"
                   onClick={() => colorPickerOpen ? setColorPickerOpen(false) : openColorPicker()}
                   aria-haspopup="dialog"
@@ -423,11 +491,18 @@ export function VehiculoFormModal({
                   <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
                 </button>
                 {colorPickerOpen && (
-                  <div
-                    role="dialog"
-                    aria-label="Selector de color personalizado"
-                    className="absolute left-0 top-full z-[80] mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-xl"
-                  >
+                  createPortal(
+                    <div
+                      ref={colorPickerRef}
+                      role="dialog"
+                      aria-label="Selector de color personalizado"
+                      className="fixed z-[100] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-xl"
+                      style={{
+                        top: colorPickerPosition.top,
+                        left: colorPickerPosition.left,
+                        maxHeight: `min(${colorPickerPosition.maxHeight}px, calc(100vh - 2rem))`,
+                      }}
+                    >
                     <div
                       ref={saturationFieldRef}
                       role="group"
@@ -523,7 +598,9 @@ export function VehiculoFormModal({
                         Aceptar
                       </button>
                     </div>
-                  </div>
+                    </div>,
+                    document.body,
+                  )
                 )}
               </div>
             </div>
@@ -558,15 +635,18 @@ export function VehiculoFormModal({
           <button onClick={onClose} className="px-6 py-2 border border-border rounded-lg hover:bg-accent transition-colors">
             Cancelar
           </button>
-          <button
-            onClick={() => reportInvalidField() && onGuardar()}
-            disabled={catalogLoading || modelLoading || selectionSaving || Boolean(catalogError) || tiposVehiculoLoading || Boolean(tiposVehiculoError)
-              || usuariosLoading || Boolean(usuariosError) || !form.placa || !form.id_cliente || !form.id_marca
-              || !form.id_modelo || !form.id_tipo_vehiculo}
-            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {modal === "crear" ? "Guardar Vehículo" : "Actualizar Vehículo"}
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={() => reportInvalidField(formModalRef.current) && onGuardar()}
+              disabled={saveDisabled}
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {selectionSaving ? "Guardando modelo..." : modal === "crear" ? "Guardar Vehículo" : "Actualizar Vehículo"}
+            </button>
+            {saveDisabled && saveDisabledMessage && (
+              <p role="status" className="text-xs text-muted-foreground">{saveDisabledMessage}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
