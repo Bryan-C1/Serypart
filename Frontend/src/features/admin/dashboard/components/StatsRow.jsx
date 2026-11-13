@@ -16,7 +16,7 @@ export function StatsRow({ periodo }) {
                 <p className="text-sm text-muted-foreground">{stat.name}</p>
                 <p className="text-2xl font-semibold mt-2">
                   {stat.metric === "ventas"
-                    ? `$${resumen[stat.metric].toLocaleString("en-US")}`
+                    ? `$${resumen[stat.metric].toLocaleString("es-CO")}`
                     : resumen[stat.metric].toLocaleString("en-US")}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">{etiquetaPeriodo}</p>
