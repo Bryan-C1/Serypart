@@ -20,7 +20,7 @@ export function MargenBarChart({ gananciasPorProducto }) {
             formatter={(value) => [`${value.toFixed(1)}%`, "Margen"]}
           />
           <Legend wrapperStyle={{ color: "var(--text)" }} />
-          <Bar dataKey="margen" fill="var(--success)" name="Margen de Ganancia (%)" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="margen" fill="#2563eb" name="Margen de Ganancia (%)" radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

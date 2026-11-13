@@ -58,8 +58,12 @@ export function getServicesByPeriod(periodo) {
 }
 
 export function getRecentActivityByPeriod(periodo) {
-  const months = new Set(getDashboardPeriodData(periodo).map(({ month }) => month));
-  return recentActivity.filter((activity) => months.has(activity.month));
+  const monthOrder = new Map(
+    getDashboardPeriodData(periodo).map(({ month }, index) => [month, index])
+  );
+  return recentActivity
+    .filter((activity) => monthOrder.has(activity.month))
+    .sort((a, b) => monthOrder.get(a.month) - monthOrder.get(b.month));
 }
 
 export function getPeriodoLabel(periodo) {
