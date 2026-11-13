@@ -43,6 +43,16 @@ export async function getMecanicos() {
   return mecanicosCache;
 }
 
+export async function getMecanicosDisponiblesPorAsistencia(fecha) {
+  const rows = await apiRequest(`/mecanicos/disponibles?fecha=${encodeURIComponent(fecha)}`);
+  if (!Array.isArray(rows)) throw new Error("La API devolvió un formato inválido para las asistencias.");
+  return rows.map((row) => ({
+    id_mecanico: Number(row.id_mecanico),
+    hora_inicio: String(row.hora_inicio || "").slice(0, 5),
+    hora_fin: String(row.hora_fin || "").slice(0, 5),
+  }));
+}
+
 export async function createMecanico(mecanico) {
   const created = fromApi(await apiRequest("/mecanicos", {
     method: "POST",

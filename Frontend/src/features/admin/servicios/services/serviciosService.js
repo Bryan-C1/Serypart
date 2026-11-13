@@ -4,6 +4,7 @@ function fromApi(servicio) {
   return {
     ...servicio,
     id: servicio.id_servicio,
+    id_servicio_padre: servicio.id_servicio_padre == null ? null : Number(servicio.id_servicio_padre),
     precio: Number(servicio.precio),
     descripcion: servicio.descripcion || "",
     duracion_estimada: servicio.duracion_estimada || "",
@@ -20,6 +21,7 @@ function toFormData(servicio) {
   body.append("duracion_estimada", servicio.duracion_estimada || "");
   body.append("estado", servicio.estado);
   body.append("id_tipo_vehiculo", String(servicio.id_tipo_vehiculo));
+  body.append("id_servicio_padre", servicio.id_servicio_padre == null ? "" : String(servicio.id_servicio_padre));
 
   if (servicio.imagenArchivo) {
     body.append("foto", servicio.imagenArchivo);

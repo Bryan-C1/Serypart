@@ -340,7 +340,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
       onClose={onClose}
     >
       <div className="space-y-6">
-        <section className="space-y-4 rounded-2xl border border-border bg-gradient-to-br from-slate-50 via-white to-sky-50 p-4 shadow-sm">
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary/70">Resumen</p>
@@ -349,7 +349,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
                 Calendario de asistencia
               </h3>
             </div>
-            <div className="flex items-center gap-1 rounded-xl border border-border bg-white/80 p-1 shadow-sm">
+            <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => navigateMonth(-1)}
@@ -392,12 +392,12 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
                   onClick={() => selectDate(cell.date)}
                   aria-pressed={isSelected}
                   aria-label={`${cell.date}${worked ? ", trabajó" : ""}${hasSales ? ", tiene ventas" : ""}`}
-                  className={`relative min-h-16 rounded-xl border p-1.5 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                  className={`relative min-h-16 rounded-xl border p-1.5 text-sm text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                     isSelected
                       ? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/20"
                       : worked
-                        ? "border-emerald-200 bg-emerald-50/80 text-emerald-700"
-                        : "border-border bg-white/60"
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
+                        : "border-border bg-background"
                   } ${isToday ? "font-bold" : ""} ${isSunday ? "text-muted-foreground" : ""}`}
                 >
                   <span className={`mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs ${
@@ -407,20 +407,20 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
                   </span>
                   <span className="mt-1 flex min-h-3 items-center justify-center gap-1">
                     {worked && <Check className="h-3 w-3 stroke-[3] text-emerald-600" aria-label="Asistencia guardada" />}
-                    {hasSales && <span className="h-2 w-2 rounded-full bg-emerald-500" title="Servicios en ventas" />}
+                    {hasSales && <span className="h-2 w-2 rounded-full bg-emerald-500" title="Ventas asociadas a este mecánico" />}
                   </span>
                 </button>
               );
             })}
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+            <span className="flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
               <Check className="h-3 w-3 stroke-[3]" />
               Asistencia guardada
             </span>
-            <span className="flex items-center gap-2 rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+            <span className="flex items-center gap-2 rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Tiene trabajos en ventas
+              Tiene ventas asociadas
             </span>
           </div>
         </section>
@@ -430,7 +430,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
           <div role="status" className="py-5 text-center text-muted-foreground">Cargando actividad del mes...</div>
         ) : (
           <>
-            <section className="space-y-4 rounded-2xl border border-border bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+            <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="flex items-center gap-2 text-lg font-semibold">
                   <ClipboardCheck className="h-5 w-5 text-primary" />
@@ -452,7 +452,7 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
                   </span>
                 </div>
               )}
-              <label className="flex items-center gap-2 rounded-xl border border-border bg-white/70 px-3 py-2 text-sm font-medium shadow-sm">
+              <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm">
                 <input
                   type="checkbox"
                   checked={Boolean(selectedDraft.asistio)}
@@ -501,33 +501,53 @@ export function ActividadCalendarioModal({ mecanico, onClose }) {
             </section>
 
             <section className="space-y-3">
-              <h3 className="font-semibold">Trabajos asociados a ventas del día</h3>
+              <h3 className="font-semibold">Ventas asociadas a este mecánico</h3>
               {actividad.ventas.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-                  No hay ventas con servicios asociadas a este mecánico para esta fecha.
+                  No hay ventas asociadas a las citas de este mecánico para esta fecha.
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full text-sm">
-                    <thead className="border-b border-border bg-muted/40">
-                      <tr className="text-left">
-                        <th className="p-3 font-medium">Venta</th>
-                        <th className="p-3 font-medium">Servicio</th>
-                        <th className="p-3 text-right font-medium">Cantidad</th>
-                        <th className="p-3 text-right font-medium">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {actividad.ventas.flatMap((venta) => venta.trabajos.map((trabajo, index) => (
-                        <tr key={trabajo.id_detalle_venta}>
-                          <td className="p-3">{index === 0 ? `#${venta.id_venta}` : ""}</td>
-                          <td className="p-3">{trabajo.nombre}</td>
-                          <td className="p-3 text-right">{trabajo.cantidad}</td>
-                          <td className="p-3 text-right">{formatMoney(trabajo.subtotal)}</td>
-                        </tr>
-                      )))}
-                    </tbody>
-                  </table>
+                <div className="space-y-3">
+                  {actividad.ventas.map((venta) => (
+                    <article key={venta.id_venta} className="overflow-hidden rounded-xl border border-border bg-card">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/40 p-3">
+                        <div>
+                          <h4 className="font-semibold">Venta #{venta.id_venta}</h4>
+                          <p className="text-xs text-muted-foreground">Fecha: {venta.fecha_venta}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs capitalize text-muted-foreground">{venta.estado}</p>
+                          <p className="font-semibold">{formatMoney(venta.total)}</p>
+                        </div>
+                      </div>
+                      {venta.conceptos.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="border-b border-border text-left">
+                              <tr>
+                                <th className="p-3 font-medium">Tipo</th>
+                                <th className="p-3 font-medium">Concepto</th>
+                                <th className="p-3 text-right font-medium">Cantidad</th>
+                                <th className="p-3 text-right font-medium">Subtotal</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                              {venta.conceptos.map((concepto) => (
+                                <tr key={concepto.id_detalle_venta}>
+                                  <td className="p-3 capitalize">{concepto.tipo}</td>
+                                  <td className="p-3">{concepto.nombre}</td>
+                                  <td className="p-3 text-right">{concepto.cantidad}</td>
+                                  <td className="p-3 text-right">{formatMoney(concepto.subtotal)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="p-3 text-sm text-muted-foreground">Esta venta no tiene conceptos detallados.</p>
+                      )}
+                    </article>
+                  ))}
                 </div>
               )}
               <p className="text-xs text-muted-foreground">

@@ -41,7 +41,7 @@ export function getTipoVehiculoNombre(id) {
 }
 
 export const emptyForm = {
-  nombre: "", descripcion: "", precio: 0, duracion_estimada: "", estado: "activo", id_tipo_vehiculo: 1, imagen: "", imagenArchivo: null,
+  nombre: "", descripcion: "", precio: 0, duracion_estimada: "", estado: "activo", id_tipo_vehiculo: 1, id_servicio_padre: null, imagen: "", imagenArchivo: null,
 };
 
 export const servicioIcono = Wrench;

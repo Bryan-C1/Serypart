@@ -100,9 +100,11 @@ export default function VentasPage() {
         <ModalWrapper title="Detalles de la Venta" onClose={closeAll}>
           <div className="grid grid-cols-2 gap-4">
             <DetailField label="Cliente" value={selected.nombre_usuario || getUsuarioNombre(selected.id_cliente)} />
+            <DetailField label="Mecánico asignado" value={selected.nombre_mecanico || "Sin mecánico asignado"} />
             <DetailField label="Método de Pago" value={selected.nombre_metodo_pago || getMetodoPagoNombre(selected.id_metodo_pago)} />
             <DetailField label="Total" value={`$${Number(selected.total).toFixed(2)}`} />
             <DetailField label="Estado" value={estadoConfig[selected.estado]?.label || selected.estado} />
+            <DetailField label="Cita" value={selected.id_agendamiento ? `#${selected.id_agendamiento}` : "Sin cita asociada"} />
           </div>
           <div className="mt-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Conceptos de la venta</p>

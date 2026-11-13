@@ -503,7 +503,7 @@ export function FormVenta({ formData, setFormData }) {
               <option value="">Seleccionar servicio</option>
               {serviciosDisponibles
                 .filter((servicio) => !items.some((item) => item.id_servicio === servicio.id))
-                .map((servicio) => <option key={servicio.id} value={servicio.id}>{servicio.nombre}</option>)}
+                .map((servicio) => <option key={servicio.id} value={servicio.id}>{servicio.codigo ? `${servicio.codigo} · ` : ""}{servicio.nombre}</option>)}
             </SearchableSelect>
             <input
               type="number"

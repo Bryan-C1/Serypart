@@ -5,6 +5,7 @@ const requireAuth = require('../middlewares/auth.middleware');
 
 const router = Router();
 
+router.get('/disponibles', requireAuth, activityController.getMechanicsWithAttendance);
 router.get('/', requireAuth, controller.getAll);
 router.get('/:id', requireAuth, controller.getById);
 router.post('/', requireAuth, controller.create);

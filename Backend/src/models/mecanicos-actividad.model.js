@@ -114,46 +114,72 @@ async function getMonthlyActivity(mechanicIdValue, monthStartValue, selectedDate
   );
   const [trabajos] = await pool.query(
     `SELECT v.id_venta, DATE_FORMAT(v.fecha_venta, '%Y-%m-%d') AS fecha_venta,
-            v.estado, dvs.id_detalle_venta_servicio, dvs.id_servicio,
-            dvs.nombre_servicio, dvs.cantidad, dvs.precio_unitario, dvs.subtotal
+            v.estado, dv.id_detalle_venta, dv.id_servicio,
+            COALESCE(dv.nombre_servicio, s.nombre) AS nombre_servicio,
+            dv.cantidad, dv.precio_unitario, dv.subtotal
        FROM venta v
        JOIN agendamiento a ON a.id_agendamiento = v.id_agendamiento
-       JOIN detalle_venta_servicios dvs ON dvs.id_venta = v.id_venta
+       JOIN detalle_venta dv ON dv.id_venta = v.id_venta AND dv.id_repuesto IS NULL
+       LEFT JOIN servicios s ON s.id_servicio = dv.id_servicio
       WHERE a.id_mecanico = ? AND v.fecha_venta BETWEEN ? AND ? AND v.estado <> 'cancelada'
-      ORDER BY v.id_venta, dvs.id_detalle_venta_servicio`,
+      ORDER BY v.id_venta, dv.id_detalle_venta`,
+    [mechanicId, monthStart, lastDay]
+  );
+  const dailyTotals = new Map();
+  trabajos.forEach((row) => {
+    dailyTotals.set(
+      row.fecha_venta,
+      (dailyTotals.get(row.fecha_venta) || 0) + Number(row.subtotal)
+    );
+  });
+  const [salesRows] = await pool.query(
+    `SELECT v.id_venta, DATE_FORMAT(v.fecha_venta, '%Y-%m-%d') AS fecha_venta,
+            v.estado, v.total, dv.id_detalle_venta, dv.id_repuesto, dv.id_servicio,
+            COALESCE(dv.nombre_servicio, s.nombre, r.nombre) AS nombre_concepto,
+            CASE
+              WHEN dv.id_repuesto IS NOT NULL THEN 'repuesto'
+              WHEN dv.id_servicio IS NOT NULL THEN 'servicio'
+              ELSE 'concepto'
+            END AS tipo_concepto,
+            dv.cantidad, dv.precio_unitario, dv.subtotal
+       FROM venta v
+       JOIN agendamiento a ON a.id_agendamiento = v.id_agendamiento
+       LEFT JOIN detalle_venta dv ON dv.id_venta = v.id_venta
+       LEFT JOIN servicios s ON s.id_servicio = dv.id_servicio
+       LEFT JOIN repuestos r ON r.id_repuesto = dv.id_repuesto
+      WHERE a.id_mecanico = ? AND v.fecha_venta BETWEEN ? AND ?
+      ORDER BY v.fecha_venta DESC, v.id_venta DESC, dv.id_detalle_venta`,
     [mechanicId, monthStart, lastDay]
   );
   const salesById = new Map();
-  const dailyTotals = new Map();
-  trabajos.forEach((row) => {
+  salesRows.forEach((row) => {
     let sale = salesById.get(Number(row.id_venta));
     if (!sale) {
       sale = {
         id_venta: Number(row.id_venta),
         fecha_venta: row.fecha_venta,
         estado: row.estado,
-        trabajos: [],
-        total_servicios: 0,
+        total: Number(row.total),
+        conceptos: [],
       };
       salesById.set(sale.id_venta, sale);
     }
-    const trabajo = {
-      id_detalle_venta: Number(row.id_detalle_venta_servicio),
-      id_servicio: row.id_servicio == null ? null : Number(row.id_servicio),
-      nombre: row.nombre_servicio,
-      cantidad: Number(row.cantidad),
-      precio_unitario: Number(row.precio_unitario),
-      subtotal: Number(row.subtotal),
-    };
-    sale.trabajos.push(trabajo);
-    sale.total_servicios += trabajo.subtotal;
-    dailyTotals.set(
-      row.fecha_venta,
-      (dailyTotals.get(row.fecha_venta) || 0) + trabajo.subtotal
-    );
+    if (row.id_detalle_venta != null) {
+      sale.conceptos.push({
+        id_detalle_venta: Number(row.id_detalle_venta),
+        id_repuesto: row.id_repuesto == null ? null : Number(row.id_repuesto),
+        id_servicio: row.id_servicio == null ? null : Number(row.id_servicio),
+        tipo: row.tipo_concepto,
+        nombre: row.nombre_concepto || 'Concepto sin nombre',
+        cantidad: Number(row.cantidad),
+        precio_unitario: Number(row.precio_unitario),
+        subtotal: Number(row.subtotal),
+      });
+    }
   });
   const asistenciasPorFecha = new Set(asistencias.map((asistencia) => asistencia.fecha));
-  const ventas = [...salesById.values()].filter((venta) => venta.fecha_venta === selectedDate);
+  const ventas = [...salesById.values()]
+    .filter((venta) => venta.fecha_venta === selectedDate);
   const roundMoney = (value) => Math.round(value * 100) / 100;
   const totalLiquidacionMes = roundMoney(
     [...dailyTotals.entries()]
@@ -163,7 +189,11 @@ async function getMonthlyActivity(mechanicIdValue, monthStartValue, selectedDate
   const totalLiquidacionDia = asistenciasPorFecha.has(selectedDate)
     ? roundMoney(dailyTotals.get(selectedDate) || 0)
     : 0;
-  const diasConVentas = [...dailyTotals.keys()].sort();
+  const diasConVentas = [...new Set(
+    [...salesById.values()]
+      .filter((sale) => sale.estado !== 'cancelada')
+      .map((sale) => sale.fecha_venta)
+  )].sort();
 
   return {
     mes_inicio: monthStart,
@@ -175,6 +205,23 @@ async function getMonthlyActivity(mechanicIdValue, monthStartValue, selectedDate
     total_liquidacion_dia: totalLiquidacionDia,
     total_liquidacion_mes: totalLiquidacionMes,
   };
+}
+
+async function getMechanicsWithAttendance(dateValue) {
+  const date = validateDate(dateValue);
+  const [rows] = await pool.query(
+    `SELECT id_mecanico, TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
+            TIME_FORMAT(hora_fin, '%H:%i') AS hora_fin
+       FROM asistencias_mecanicos
+      WHERE fecha = ?
+      ORDER BY id_mecanico`,
+    [date]
+  );
+  return rows.map((row) => ({
+    id_mecanico: Number(row.id_mecanico),
+    hora_inicio: row.hora_inicio,
+    hora_fin: row.hora_fin,
+  }));
 }
 
 async function createAttendance(mechanicIdValue, data) {
@@ -251,6 +298,7 @@ async function removeAttendance(mechanicIdValue, attendanceIdValue) {
 
 module.exports = {
   getMonthlyActivity,
+  getMechanicsWithAttendance,
   createAttendance,
   updateAttendance,
   removeAttendance,

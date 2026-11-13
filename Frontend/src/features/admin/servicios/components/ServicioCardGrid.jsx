@@ -28,7 +28,10 @@ export function ServicioCardGrid({ servicios, onToggleEstado, onVer, onEditar, o
             <div className="p-5">
             <div className="flex items-start gap-3 mb-3">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg mb-1 truncate">{s.nombre}</h3>
+                <h3 className="mb-1 flex items-center gap-2 font-semibold text-lg">
+                  <span className="truncate">{s.nombre}</span>
+                  {s.codigo && <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{s.codigo}</span>}
+                </h3>
                 <p className="text-sm text-muted-foreground line-clamp-2">{s.descripcion}</p>
               </div>
             </div>

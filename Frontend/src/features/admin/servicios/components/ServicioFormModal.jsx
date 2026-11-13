@@ -1,10 +1,10 @@
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { ImageWithFallback } from "../../../../shared/figma/ImageWithFallback";
-import { onlyLetters, reportInvalidField } from "../../../../shared/utils/inputValidation";
+import { onlyLettersAndDigits, reportInvalidField } from "../../../../shared/utils/inputValidation";
 import { tiposVehiculo } from "../services/serviciosData";
 import { SearchableSelect } from "../../../../shared/ui/searchable-select";
 
-export function ServicioFormModal({ modal, form, setForm, onClose, onGuardar, saving, error }) {
+export function ServicioFormModal({ modal, form, setForm, onClose, onBack, onGuardar, saving, error }) {
   if (modal !== "crear" && modal !== "editar") return null;
 
   const handleImageChange = (event) => {
@@ -24,21 +24,36 @@ export function ServicioFormModal({ modal, form, setForm, onClose, onGuardar, sa
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card">
-          <h2 className="text-xl font-semibold">{modal === "crear" ? "Nuevo Servicio" : "Editar Servicio"}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-accent rounded-lg transition-colors">
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </button>
+            <h2 className="text-xl font-semibold">{modal === "crear" ? "Nuevo Servicio" : "Editar Servicio"}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1 hover:bg-accent rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="p-6 space-y-4 service-form">
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {form.id_servicio_padre != null && (
+            <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
+              Se agregará como subservicio de {form.codigo_servicio_padre} · {form.nombre_servicio_padre}. El código se asignará automáticamente.
+            </p>
+          )}
           <div>
             <label className="block text-sm font-medium mb-2">Nombre del Servicio *</label>
             <input
               type="text"
               placeholder="Ej: Cambio de Aceite"
               value={form.nombre}
-              onChange={(e) => setForm((f) => ({ ...f, nombre: onlyLetters(e.target.value) }))}
-              pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]+"
+              onChange={(e) => setForm((f) => ({ ...f, nombre: onlyLettersAndDigits(e.target.value) }))}
+              pattern="[A-Za-z0-9ÁÉÍÓÚáéíóúÑñÜü\s'-]+"
               required
               className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -119,10 +134,7 @@ export function ServicioFormModal({ modal, form, setForm, onClose, onGuardar, sa
             </div>
           </div>
         </div>
-        <div className="p-6 border-t border-border flex justify-end gap-3">
-          <button onClick={onClose} className="px-6 py-2 border border-border rounded-lg hover:bg-accent transition-colors">
-            Cancelar
-          </button>
+        <div className="p-6 border-t border-border flex justify-end">
           <button
             onClick={() => reportInvalidField() && onGuardar()}
             disabled={!form.nombre || !form.precio || saving}

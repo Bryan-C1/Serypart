@@ -26,6 +26,7 @@ function fromApi(venta) {
     total,
     otherConceptsTotal: Math.max(0, total - items.reduce((sum, item) => sum + item.subtotal, 0)),
     nombre_usuario: [venta.usuario_nombre, venta.usuario_apellido].filter(Boolean).join(" "),
+    nombre_mecanico: [venta.mecanico_nombre, venta.mecanico_apellido].filter(Boolean).join(" ") || null,
     nombre_metodo_pago: venta.metodo_pago_nombre || "",
     items,
   };

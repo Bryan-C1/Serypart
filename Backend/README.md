@@ -34,10 +34,13 @@ antes de iniciar el servidor. Cada asistencia guarda fecha y horas de entrada
 y salida dentro del horario del taller (lunes a viernes, 08:00 a 17:00;
 sábados, 08:00 a 14:00). Después aplica
 `migrations/010_ventas_mecanico_servicios.sql` para asociar ventas con citas y
-guardar sus servicios. El calendario mensual permite registrar asistencia y
+guardar repuestos y servicios en `detalle_venta`; la migración amplía esa tabla
+y no crea una tabla adicional. El calendario mensual permite registrar asistencia y
 consultar los trabajos de cada día desde las ventas no canceladas asociadas a
-citas del mecánico. La liquidación mensual suma los subtotales de esos
-servicios únicamente en los días con asistencia; no incluye repuestos.
+citas del mecánico. La liquidación mensual suma los subtotales de esos servicios
+únicamente en los días con asistencia; no incluye repuestos.
+Aplica también `migrations/012_servicios_jerarquia.sql` para habilitar códigos
+jerárquicos de servicios de hasta tres niveles.
 Si `agendamiento.id_mecanico` tiene una clave foránea heredada hacia
 `usuarios.id_usuario`, aplica `migrations/011_agendamiento_mecanicos_fk.sql`
 para enlazar las citas con `mecanicos.id_mecanico` y conservar las asignaciones

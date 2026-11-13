@@ -10,6 +10,12 @@ async function getMonthlyActivity(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function getMechanicsWithAttendance(req, res, next) {
+  try {
+    res.json(await MecanicosActividadModel.getMechanicsWithAttendance(req.query.fecha));
+  } catch (err) { next(err); }
+}
+
 async function createAttendance(req, res, next) {
   try {
     res.status(201).json(await MecanicosActividadModel.createAttendance(req.params.id, req.body));
@@ -31,6 +37,7 @@ async function removeAttendance(req, res, next) {
 
 module.exports = {
   getMonthlyActivity,
+  getMechanicsWithAttendance,
   createAttendance,
   updateAttendance,
   removeAttendance,

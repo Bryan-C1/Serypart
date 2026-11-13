@@ -1,5 +1,7 @@
 export const onlyLetters = (value) => value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, "");
 
+export const onlyLettersAndDigits = (value) => value.replace(/[^A-Za-z0-9ÁÉÍÓÚáéíóúÑñÜü\s'-]/g, "");
+
 export const onlyDigits = (value) => value.replace(/\D/g, "");
 
 export const onlyDecimal = (value) => {

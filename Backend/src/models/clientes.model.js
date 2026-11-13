@@ -73,6 +73,7 @@ async function restoreCascade(connection, clientId) {
          FROM detalle_venta dv
          JOIN venta v ON v.id_venta = dv.id_venta
         WHERE dv.id_venta = ? AND v.id_cliente = ? AND v.estado = 'cancelada'
+          AND dv.id_repuesto IS NOT NULL
         GROUP BY dv.id_repuesto`,
       [sale.id_registro, clientId]
     );
@@ -143,7 +144,7 @@ async function annulRelatedRecords(connection, clientId) {
     const [stockByPart] = await connection.query(
       `SELECT id_repuesto, SUM(cantidad) AS cantidad
          FROM detalle_venta
-        WHERE id_venta IN (${placeholders})
+        WHERE id_venta IN (${placeholders}) AND id_repuesto IS NOT NULL
         GROUP BY id_repuesto`,
       saleIds
     );
