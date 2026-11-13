@@ -1,8 +1,7 @@
-import { getPeriodSummary, getPeriodoLabel, stats } from "../services/dashboardData";
+import { getPeriodSummary, stats } from "../services/dashboardData";
 
-export function StatsRow({ periodo }) {
-  const resumen = getPeriodSummary(periodo);
-  const etiquetaPeriodo = getPeriodoLabel(periodo);
+export function StatsRow({ data, range, view }) {
+  const resumen = getPeriodSummary(data, range);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -16,10 +15,10 @@ export function StatsRow({ periodo }) {
                 <p className="text-sm text-muted-foreground">{stat.name}</p>
                 <p className="text-2xl font-semibold mt-2">
                   {stat.metric === "ventas"
-                    ? `$${resumen[stat.metric].toLocaleString("es-CO")}`
+                    ? `$${resumen[stat.metric].toLocaleString("es-CO", { maximumFractionDigits: 2 })}`
                     : resumen[stat.metric].toLocaleString("en-US")}
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">{etiquetaPeriodo}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{view === "week" ? "En la semana" : view === "year" ? "En el año" : "En el mes"}</p>
               </div>
               <div className={`${stat.color} p-3 rounded-lg`}>
                 <Icon className="w-6 h-6 text-white" />
