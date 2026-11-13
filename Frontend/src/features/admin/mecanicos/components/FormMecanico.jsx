@@ -1,112 +1,18 @@
-import { useMemo, useRef, useState } from "react";
 import { onlyDigits, onlyLetters, onlyPhone } from "../../../../shared/utils/inputValidation";
-import { DIAS_SEMANA, HORARIOS_POR_DIA, especialidades, formatHorariosPorDia, getHorariosOcupadosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
+import {
+  CIUDADES_ANTIOQUIA,
+  DEPARTAMENTOS_COLOMBIA,
+  REGIONES_ANTIOQUIA,
+  especialidades,
+} from "../services/mecanicosData";
 import { SearchableSelect } from "../../../../shared/ui/searchable-select";
 
-export function FormMecanico({ formData, setFormData, mecanicos }) {
+export function FormMecanico({ formData, setFormData }) {
   const field = (key) => (e) =>
     setFormData((prev) => ({ ...prev, [key]: key === "nombre" || key === "apellido" ? onlyLetters(e.target.value) : key === "numeroDocumento" ? onlyDigits(e.target.value) : key === "telefono" ? onlyPhone(e.target.value) : e.target.value }));
 
   const inputCls = "w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring";
-  const horariosPorDia = useMemo(() => normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad), [formData.horariosPorDia, formData.horarioDisponibilidad]);
-  const [selectedDays, setSelectedDays] = useState(() => new Set(Object.keys(horariosPorDia)));
-  const removedHorariosPorDia = useRef({});
-
-  const occupiedByOthers = getHorariosOcupadosPorDia(mecanicos, formData.id ?? null);
-  const selectedDaysInOrder = DIAS_SEMANA.filter((day) => selectedDays.has(day));
-  const daySlots = [...new Map(
-    (selectedDaysInOrder.length ? selectedDaysInOrder : [DIAS_SEMANA[0]])
-      .flatMap((day) => HORARIOS_POR_DIA[day] || [])
-      .map((option) => [option.value, option])
-  ).values()];
-
-  const addSlotToSelectedDays = (slotValue) => {
-    setFormData((prev) => {
-      const nextMap = normalizeHorariosPorDia(prev.horariosPorDia ?? prev.horarioDisponibilidad);
-      const availableDays = selectedDaysInOrder.filter((day) =>
-        HORARIOS_POR_DIA[day]?.some((option) => option.value === slotValue) &&
-        !occupiedByOthers[day]?.has(slotValue) && !(nextMap[day] || []).includes(slotValue)
-      );
-      if (availableDays.length === 0) return prev;
-
-      const updated = { ...nextMap };
-      availableDays.forEach((day) => {
-        updated[day] = [...(updated[day] || []), slotValue];
-      });
-
-      return {
-        ...prev,
-        horariosPorDia: updated,
-        horarioDisponibilidad: formatHorariosPorDia(updated),
-      };
-    });
-  };
-
-  const toggleDaySelection = (day) => {
-    const isSelected = selectedDays.has(day);
-    setSelectedDays((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(day)) updated.delete(day);
-      else updated.add(day);
-      return updated;
-    });
-
-    if (isSelected) {
-      removedHorariosPorDia.current[day] = horariosPorDia[day] || [];
-      setFormData((prev) => {
-        const updated = normalizeHorariosPorDia(prev.horariosPorDia ?? prev.horarioDisponibilidad);
-        delete updated[day];
-        return {
-          ...prev,
-          horariosPorDia: updated,
-          horarioDisponibilidad: formatHorariosPorDia(updated),
-        };
-      });
-    } else {
-      const horariosToRestore = removedHorariosPorDia.current[day] || [];
-      delete removedHorariosPorDia.current[day];
-      setFormData((prev) => {
-        const updated = normalizeHorariosPorDia(prev.horariosPorDia ?? prev.horarioDisponibilidad);
-        const availableHorarios = horariosToRestore.filter((slot) =>
-          HORARIOS_POR_DIA[day]?.some((option) => option.value === slot) &&
-          !occupiedByOthers[day]?.has(slot) &&
-          !(updated[day] || []).includes(slot)
-        );
-        if (availableHorarios.length === 0) return prev;
-
-        updated[day] = [...(updated[day] || []), ...availableHorarios];
-        return {
-          ...prev,
-          horariosPorDia: updated,
-          horarioDisponibilidad: formatHorariosPorDia(updated),
-        };
-      });
-    }
-  };
-
-  const removeSlotFromDay = (day, slotValue) => {
-    setFormData((prev) => {
-      const nextMap = normalizeHorariosPorDia(prev.horariosPorDia ?? prev.horarioDisponibilidad);
-      const nextDaySlots = (nextMap[day] || []).filter((slot) => slot !== slotValue);
-
-      const updated = { ...nextMap, [day]: nextDaySlots };
-      if (nextDaySlots.length === 0) {
-        delete updated[day];
-        removedHorariosPorDia.current[day] = [];
-        setSelectedDays((days) => {
-          const nextDays = new Set(days);
-          nextDays.delete(day);
-          return nextDays;
-        });
-      }
-
-      return {
-        ...prev,
-        horariosPorDia: updated,
-        horarioDisponibilidad: formatHorariosPorDia(updated),
-      };
-    });
-  };
+  const esAntioquia = (formData.departamento ?? "Antioquia") === "Antioquia";
 
   return (
     <div className="space-y-4">
@@ -145,6 +51,32 @@ export function FormMecanico({ formData, setFormData, mecanicos }) {
           <input type="email" value={formData.email} onChange={field("email")} className={inputCls} />
         </div>
         <div>
+          <label className="block text-sm font-medium mb-2">Departamento</label>
+          <SearchableSelect value={formData.departamento ?? "Antioquia"} onChange={field("departamento")} className={inputCls}>
+            {DEPARTAMENTOS_COLOMBIA.map((departamento) => (
+              <option key={departamento} value={departamento}>{departamento}</option>
+            ))}
+          </SearchableSelect>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Ciudad</label>
+          <SearchableSelect value={formData.ciudad ?? "Medellín"} onChange={field("ciudad")} className={inputCls}>
+            {CIUDADES_ANTIOQUIA.map((ciudad) => (
+              <option key={ciudad} value={ciudad}>{ciudad}</option>
+            ))}
+          </SearchableSelect>
+        </div>
+        {esAntioquia && (
+          <div>
+            <label className="block text-sm font-medium mb-2">Región de Antioquia</label>
+            <SearchableSelect value={formData.regionAntioquia ?? "Valle de Aburrá"} onChange={field("regionAntioquia")} className={inputCls}>
+              {REGIONES_ANTIOQUIA.map((region) => (
+                <option key={region} value={region}>{region}</option>
+              ))}
+            </SearchableSelect>
+          </div>
+        )}
+        <div>
           <label className="block text-sm font-medium mb-2">Especialidad</label>
           <SearchableSelect value={formData.especialidad} onChange={field("especialidad")} className={inputCls}>
             {especialidades.map((e) => (
@@ -152,116 +84,14 @@ export function FormMecanico({ formData, setFormData, mecanicos }) {
             ))}
           </SearchableSelect>
         </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-2">Horario de disponibilidad</label>
-          <div className="space-y-3 rounded-lg border border-border bg-background p-3">
-            <div>
-              <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-2">Días</label>
-              <div className="grid grid-cols-2 gap-2">
-                {DIAS_SEMANA.map((day) => {
-                  const checked = selectedDays.has(day);
-
-                  return (
-                    <label
-                      key={day}
-                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-primary bg-primary/5" : "border-border bg-input-background"}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleDaySelection(day)}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
-                      />
-                      <span>{day}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-2">Horario del día</label>
-              <select
-                value=""
-                onChange={(event) => {
-                  const slotValue = event.target.value;
-                  if (!slotValue) return;
-                  addSlotToSelectedDays(slotValue);
-                  event.target.value = "";
-                }}
-                className={inputCls}
-                disabled={selectedDaysInOrder.length === 0}
-              >
-                <option value="">{selectedDaysInOrder.length ? "Selecciona un horario" : "Selecciona uno o varios días"}</option>
-                {daySlots.map((option) => {
-                  const availableDays = selectedDaysInOrder.filter((day) =>
-                    HORARIOS_POR_DIA[day]?.some((dayOption) => dayOption.value === option.value) &&
-                    !occupiedByOthers[day]?.has(option.value) && !(horariosPorDia[day] || []).includes(option.value)
-                  );
-                  const unavailableInSomeDays = availableDays.length > 0 && availableDays.length < selectedDaysInOrder.length;
-                  const unavailableInAllDays = selectedDaysInOrder.length > 0 && availableDays.length === 0;
-                  return (
-                    <option key={option.value} value={option.value} disabled={unavailableInAllDays || selectedDaysInOrder.length === 0}>
-                      {option.label}
-                      {unavailableInAllDays ? " - No disponible" : unavailableInSomeDays ? " - Disponible en algunos días" : ""}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Resumen</p>
-              <div aria-live="polite" aria-atomic="true">
-              {selectedDaysInOrder.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay horarios seleccionados.</p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedDaysInOrder.map((day) => {
-                    const slots = horariosPorDia[day] || [];
-                    return (
-                      <div key={day} className="rounded-lg border border-border bg-input-background p-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-sm">{day}</span>
-                        </div>
-                        {slots.length === 0 ? (
-                          <p className="mt-2 text-xs text-muted-foreground">Selecciona un horario para este día.</p>
-                        ) : (
-                          <div className="mt-2 space-y-2">
-                            {slots.map((slot) => (
-                              <div
-                                key={`${day}-${slot}`}
-                                className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs hover:bg-accent transition-colors"
-                              >
-                                <span>{HORARIOS_POR_DIA[day].find((option) => option.value === slot)?.label || slot}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeSlotFromDay(day, slot)}
-                                  className="rounded-md px-2 py-1 text-[11px] font-medium leading-4 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                >
-                                  Quitar
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Estado</label>
-            <SearchableSelect value={formData.estado} onChange={field("estado")} searchable={false} className={inputCls}>
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-              <option value="vacaciones">Vacaciones</option>
-              {formData.estado === "anulado" && <option value="anulado" disabled>Anulado</option>}
-            </SearchableSelect>
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Estado</label>
+          <SearchableSelect value={formData.estado} onChange={field("estado")} searchable={false} className={inputCls}>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+            <option value="vacaciones">Vacaciones</option>
+            {formData.estado === "anulado" && <option value="anulado" disabled>Anulado</option>}
+          </SearchableSelect>
         </div>
       </div>
     </div>

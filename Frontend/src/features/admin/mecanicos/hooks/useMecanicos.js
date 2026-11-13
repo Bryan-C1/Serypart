@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createMecanico, getMecanicos, updateMecanico } from "../services/mecanicosService";
-import { emptyForm, formatHorariosPorDia, normalizeHorariosPorDia } from "../services/mecanicosData";
+import { emptyForm } from "../services/mecanicosData";
 
 const itemsPerPage = 10;
 
@@ -128,14 +128,9 @@ export function useMecanicos() {
 
   const handleGuardarNuevo = async () => {
     if (!formData.nombre.trim()) return;
-    const horarios = normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad);
     const created = await runMutation(() => createMecanico(formData));
     if (!created) return;
-  setMecanicos((current) => [...current, {
-    ...created,
-    horariosPorDia: horarios,
-    horarioDisponibilidad: formatHorariosPorDia(horarios),
-  }]);
+    setMecanicos((current) => [...current, created]);
     setShowModal(false);
   };
 
@@ -151,17 +146,11 @@ export function useMecanicos() {
 
   const handleGuardarEdicion = async () => {
     if (!selectedMecanico || !formData.nombre.trim()) return;
-    const horarios = normalizeHorariosPorDia(formData.horariosPorDia ?? formData.horarioDisponibilidad);
     const data = { ...formData, estado: selectedMecanico.estado === "anulado" ? "anulado" : formData.estado };
     const updated = await runMutation(() => updateMecanico(selectedMecanico.id, data));
     if (!updated) return;
-  const updatedWithSchedule = {
-    ...updated,
-    horariosPorDia: horarios,
-    horarioDisponibilidad: formatHorariosPorDia(horarios),
-  };
-  setMecanicos((current) => current.map((m) => m.id === updated.id ? updatedWithSchedule : m));
-  setSelectedMecanico(updatedWithSchedule);
+    setMecanicos((current) => current.map((m) => m.id === updated.id ? updated : m));
+    setSelectedMecanico(updated);
     setShowEditModal(false);
   };
 

@@ -36,7 +36,7 @@ function toApi(vehiculo, includeFechaRegistro = true) {
     id_marca: Number(vehiculo.id_marca),
     id_modelo: Number(vehiculo.id_modelo),
     anio: Number(vehiculo.año ?? vehiculo.anio),
-    color: vehiculo.color || "",
+    color: vehiculo.colorHex || vehiculo.color || "",
     id_tipo_vehiculo: Number(vehiculo.id_tipo_vehiculo),
     estado: vehiculo.estado,
     ...(includeFechaRegistro && {
