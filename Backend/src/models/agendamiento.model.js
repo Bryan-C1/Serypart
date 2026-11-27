@@ -6,6 +6,21 @@ const { addVehicleHistory } = require('../services/vehicle-history.service');
 const TABLE = 'agendamiento';
 const PK = 'id_agendamiento';
 
+function getCancellationReason(value) {
+  const reason = typeof value === 'string' ? value.trim() : '';
+  if (!reason) {
+    const error = new Error('Debes registrar el motivo de anulación de la cita.');
+    error.status = 400;
+    throw error;
+  }
+  if (reason.length > 500) {
+    const error = new Error('El motivo de anulación no puede superar los 500 caracteres.');
+    error.status = 400;
+    throw error;
+  }
+  return reason;
+}
+
 async function ensureClientRelationColumns(connection = pool) {
   const [columns] = await connection.query("SHOW COLUMNS FROM agendamiento LIKE 'id_cliente'");
   if (columns.length === 0) {
@@ -175,6 +190,9 @@ async function create(data) {
   await ensureClientRelationColumns();
   const serviceIds = getServiceIds(data);
   const mechanicId = getMechanicId(data);
+  const motivoAnulacion = data.estado === 'cancelada'
+    ? getCancellationReason(data.motivo_anulacion)
+    : null;
   if (serviceIds.length === 0) throw new Error('La cita debe incluir al menos un servicio.');
 
   const connection = await pool.getConnection();
@@ -188,8 +206,8 @@ async function create(data) {
       await validateMechanicAttendance(connection, mechanicId, data.fecha_cita, data.hora_cita);
     }
     const [result] = await connection.query(
-      `INSERT INTO ${TABLE} (id_servicio, id_vehiculo, id_usuario, id_cliente, id_mecanico, fecha_cita, hora_cita, estado, observaciones, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [serviceIds[0], data.id_vehiculo, clients[0].id_usuario, data.id_cliente, mechanicId, data.fecha_cita, data.hora_cita, data.estado, data.observaciones || '', data.fecha_registro]
+      `INSERT INTO ${TABLE} (id_servicio, id_vehiculo, id_usuario, id_cliente, id_mecanico, fecha_cita, hora_cita, estado, motivo_anulacion, observaciones, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [serviceIds[0], data.id_vehiculo, clients[0].id_usuario, data.id_cliente, mechanicId, data.fecha_cita, data.hora_cita, data.estado, motivoAnulacion, data.observaciones || '', data.fecha_registro]
     );
     appointmentId = result.insertId;
     for (const idServicio of serviceIds) {
@@ -221,7 +239,7 @@ async function update(id, data) {
   try {
     await connection.beginTransaction();
     const [existingAppointments] = await connection.query(
-      `SELECT estado, id_mecanico, DATE_FORMAT(fecha_cita, '%Y-%m-%d') AS fecha_cita,
+      `SELECT estado, motivo_anulacion, id_mecanico, DATE_FORMAT(fecha_cita, '%Y-%m-%d') AS fecha_cita,
               TIME_FORMAT(hora_cita, '%H:%i') AS hora_cita
          FROM ${TABLE} WHERE ${PK} = ? FOR UPDATE`,
       [id]
@@ -230,6 +248,10 @@ async function update(id, data) {
       await connection.rollback();
       return null;
     }
+    const existingAppointment = existingAppointments[0];
+    const motivoAnulacion = data.estado === 'cancelada' && existingAppointment.estado !== 'cancelada'
+      ? getCancellationReason(data.motivo_anulacion)
+      : existingAppointment.motivo_anulacion;
     const [clients] = await connection.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [data.id_cliente]);
     if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
     const assignedMechanicId = mechanicId ?? existingAppointments[0].id_mecanico;
@@ -241,8 +263,8 @@ async function update(id, data) {
       await validateMechanicAttendance(connection, assignedMechanicId, data.fecha_cita, data.hora_cita);
     }
     await connection.query(
-      `UPDATE ${TABLE} SET id_servicio = ?, id_vehiculo = ?, id_usuario = ?, id_cliente = ?, id_mecanico = COALESCE(?, id_mecanico), fecha_cita = ?, hora_cita = ?, estado = ?, observaciones = ?, fecha_registro = ? WHERE ${PK} = ?`,
-      [serviceIds[0], data.id_vehiculo, clients[0].id_usuario, data.id_cliente, mechanicId, data.fecha_cita, data.hora_cita, data.estado, data.observaciones || '', data.fecha_registro, id]
+      `UPDATE ${TABLE} SET id_servicio = ?, id_vehiculo = ?, id_usuario = ?, id_cliente = ?, id_mecanico = COALESCE(?, id_mecanico), fecha_cita = ?, hora_cita = ?, estado = ?, motivo_anulacion = ?, observaciones = ?, fecha_registro = ? WHERE ${PK} = ?`,
+      [serviceIds[0], data.id_vehiculo, clients[0].id_usuario, data.id_cliente, mechanicId, data.fecha_cita, data.hora_cita, data.estado, motivoAnulacion, data.observaciones || '', data.fecha_registro, id]
     );
     await connection.query('DELETE FROM detalle_agendamiento WHERE id_agendamiento = ?', [id]);
     for (const idServicio of serviceIds) {

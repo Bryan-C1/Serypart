@@ -12,10 +12,14 @@ import { PaginationBar } from "../../components/PaginationBar";
 export default function ServiciosPage() {
   const {
     servicios, searchTerm, filterEstado, setFilterEstado, loading, saving, error, loadServicios,
+    filterCategoria, filterPrecioMin, filterPrecioMax,
+    sortDirection,
     showFilter, setShowFilter, viewMode, setViewMode, modal, selected, form, setForm, deleteId, setDeleteId,
     filteredServicios, stats, currentPage, setCurrentPage, totalPages, startIndex, endIndex, paginatedServicios,
-    openCrear, openCrearSubservicio, openEditar, openVer, backToPreviousDetail, backFromForm, detailHistory, closeModal, handleToggleEstado, handleGuardar, handleEliminar, clearFilters,
-    handleSearchChange, handleFilterEstadoChange, handleViewModeChange,
+    openCrear, openCrearSubservicio, openEditar, openVer, backToPreviousDetail, backFromForm, detailHistory, closeModal, handleToggleEstado, handleGuardar, handleEliminar, clearFilters, handleExport,
+    handleSearchChange, handleFilterEstadoChange, handleFilterCategoriaChange,
+    handleFilterPrecioMinChange, handleFilterPrecioMaxChange, handleSortDirectionChange,
+    handleViewModeChange,
   } = useServicios();
 
   return (
@@ -69,6 +73,15 @@ export default function ServiciosPage() {
           onSearchChange={handleSearchChange}
           filterEstado={filterEstado}
           onFilterEstadoChange={handleFilterEstadoChange}
+          filterCategoria={filterCategoria}
+          onFilterCategoriaChange={handleFilterCategoriaChange}
+          filterPrecioMin={filterPrecioMin}
+          onFilterPrecioMinChange={handleFilterPrecioMinChange}
+          filterPrecioMax={filterPrecioMax}
+          onFilterPrecioMaxChange={handleFilterPrecioMaxChange}
+          sortDirection={sortDirection}
+          onSortDirectionChange={handleSortDirectionChange}
+          onExport={handleExport}
           showFilter={showFilter}
           onToggleFilter={setShowFilter}
           onClearFilters={clearFilters}

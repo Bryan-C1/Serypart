@@ -228,7 +228,9 @@ export function FormVenta({ formData, setFormData }) {
   const items = formData.items || [];
   const totalItems = items.reduce((total, item) => total + Number(item.subtotal || 0), 0);
   const otherConceptsTotal = Number(formData.otherConceptsTotal || 0);
-  const serviciosDisponibles = catalogs.servicios;
+  const serviciosDisponibles = catalogs.servicios.filter(
+    (servicio) => String(servicio.estado || "").trim().toLowerCase() === "activo",
+  );
   const tieneCita = formData.tieneCita !== false;
 
   const handleTieneCitaChange = (hasAppointment) => {
@@ -254,7 +256,7 @@ export function FormVenta({ formData, setFormData }) {
         ? [{ id: cita.id_servicio }]
         : [];
     const itemsDeCita = serviciosDeCita.map((servicio, index) => {
-      const servicioCompleto = serviciosDisponibles.find((item) => item.id === Number(servicio.id));
+      const servicioCompleto = catalogs.servicios.find((item) => item.id === Number(servicio.id));
       const precioUnitario = Number(servicioCompleto?.precio || 0);
       return {
         id_detalle_venta: Date.now() + index,
@@ -320,7 +322,11 @@ export function FormVenta({ formData, setFormData }) {
       return;
     }
     const servicio = serviciosDisponibles.find((item) => String(item.id) === String(servicioActual));
-    if (!servicio || items.some((item) => item.id_servicio === servicio.id)) return;
+    if (!servicio) {
+      setItemError("Los servicios inactivos no se pueden agregar a una venta.");
+      return;
+    }
+    if (items.some((item) => item.id_servicio === servicio.id)) return;
 
     setItemError("");
     const precioUnitario = Number(servicio.precio || 0);
