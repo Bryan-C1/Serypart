@@ -14,6 +14,9 @@ export function useVentas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("todos");
   const [filterMetodo, setFilterMetodo] = useState("todos");
+  const [historyFechaDesde, setHistoryFechaDesde] = useState("");
+  const [historyFechaHasta, setHistoryFechaHasta] = useState("");
+  const [sortDirection, setSortDirection] = useState("desc");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -60,12 +63,31 @@ export function useVentas() {
         : v.estado === filterEstado;
     const matchMetodo = filterMetodo === "todos" || v.id_metodo_pago === Number(filterMetodo);
     return matchSearch && matchEstado && matchMetodo;
+  }).sort((first, second) => {
+    const totalOrder = Number(first.total || 0) - Number(second.total || 0);
+    const saleOrder = Number(first.id_venta) - Number(second.id_venta);
+    return (totalOrder || saleOrder) * (sortDirection === "asc" ? 1 : -1);
   });
 
   const totalPages = Math.max(Math.ceil(filtered.length / itemsPerPage), 1);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedVentas = filtered.slice(startIndex, endIndex);
+  const historyVentas = [...ventas].sort((first, second) => {
+    const totalOrder = Number(first.total || 0) - Number(second.total || 0);
+    const saleOrder = Number(first.id_venta) - Number(second.id_venta);
+    return (totalOrder || saleOrder) * (sortDirection === "asc" ? 1 : -1);
+  });
+  const filteredHistoryVentas = historyVentas.filter((venta) => {
+    const fecha = String(venta.fecha_venta || "").slice(0, 10);
+    if ((historyFechaDesde || historyFechaHasta) && !fecha) return false;
+    return (!historyFechaDesde || fecha >= historyFechaDesde)
+      && (!historyFechaHasta || fecha <= historyFechaHasta);
+  });
+  const historyTotalPages = Math.max(Math.ceil(filteredHistoryVentas.length / itemsPerPage), 1);
+  const historyStartIndex = filteredHistoryVentas.length ? startIndex + 1 : 0;
+  const historyEndIndex = Math.min(endIndex, filteredHistoryVentas.length);
+  const paginatedHistoryVentas = filteredHistoryVentas.slice(startIndex, endIndex);
 
   const totalIngresado = ventas.filter((v) => v.estado === "pagada").reduce((a, v) => a + Number(v.total || 0), 0);
   const stats = {
@@ -224,14 +246,30 @@ export function useVentas() {
   const handleSearchChange = (value) => { setSearchTerm(value); setCurrentPage(1); };
   const handleFilterEstadoChange = (value) => { setFilterEstado(value); setCurrentPage(1); };
   const handleFilterMetodoChange = (value) => { setFilterMetodo(value); setCurrentPage(1); };
+  const handleHistoryFechaDesdeChange = (value) => { setHistoryFechaDesde(value); setCurrentPage(1); };
+  const handleHistoryFechaHastaChange = (value) => { setHistoryFechaHasta(value); setCurrentPage(1); };
+  const handleToggleSortDirection = () => {
+    setSortDirection((current) => current === "asc" ? "desc" : "asc");
+    setCurrentPage(1);
+  };
+  const clearHistoryDateFilter = () => {
+    setHistoryFechaDesde("");
+    setHistoryFechaHasta("");
+    setCurrentPage(1);
+  };
 
   return {
     ventas, searchTerm, setSearchTerm, filterEstado, setFilterEstado, error, loading, loadVentas, metodosPago, updatingSaleId,
     filterMetodo, setFilterMetodo, showFilters, setShowFilters,
     showModal, showDetailModal, showEditModal, showCancelModal, showActivateModal, activationStatus, selected, formData, setFormData,
     filtered, stats, currentPage, setCurrentPage, totalPages, startIndex, endIndex, paginatedVentas,
+    filteredHistoryVentas, historyFechaDesde, historyFechaHasta,
+    sortDirection,
+    historyTotalPages, historyStartIndex, historyEndIndex, paginatedHistoryVentas,
     handleNuevo, handleGuardarNuevo, handleVerDetalles, handleEditar,
     handleGuardarEdicion, handleAnular, handleConfirmarAnular, handleCambiarEstado, handleConfirmarActivacion, closeAll, clearFilters,
     handleSearchChange, handleFilterEstadoChange, handleFilterMetodoChange,
+    handleHistoryFechaDesdeChange, handleHistoryFechaHastaChange, clearHistoryDateFilter,
+    handleToggleSortDirection,
   };
 }

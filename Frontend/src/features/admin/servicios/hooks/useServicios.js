@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { emptyForm } from "../services/serviciosData";
+import { exportServiciosToExcel } from "../services/serviciosExport";
 import { createServicio, getServicios, updateServicio } from "../services/serviciosService";
+
+function compareText(first, second) {
+  return String(first || "").localeCompare(String(second || ""), "es", {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
 
 export function useServicios() {
   const [servicios, setServicios] = useState([]);
@@ -9,6 +17,10 @@ export function useServicios() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("todos");
+  const [filterCategoria, setFilterCategoria] = useState("todos");
+  const [filterPrecioMin, setFilterPrecioMin] = useState("");
+  const [filterPrecioMax, setFilterPrecioMax] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState("table");
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,19 +52,21 @@ export function useServicios() {
 
   const serviciosPrincipales = servicios.filter((servicio) => servicio.id_servicio_padre == null);
   const filteredServicios = serviciosPrincipales.filter((s) => {
-    const matchSearch =
-      s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = s.nombre.toLowerCase().includes(searchTerm.toLowerCase());
     const matchEstado = filterEstado === "anulados"
       ? s.estado === "anulado"
       : filterEstado === "todos"
         ? s.estado !== "anulado"
         : s.estado === filterEstado;
-    return matchSearch && matchEstado;
+    const matchCategoria = filterCategoria === "todos"
+      || String(s.id_tipo_vehiculo) === filterCategoria;
+    const matchPrecioMin = filterPrecioMin === "" || s.precio >= Number(filterPrecioMin);
+    const matchPrecioMax = filterPrecioMax === "" || s.precio <= Number(filterPrecioMax);
+    return matchSearch && matchEstado && matchCategoria && matchPrecioMin && matchPrecioMax;
   });
 
   const serviciosOrdenados = [...filteredServicios].sort((a, b) => (
-    String(a.codigo || "").localeCompare(String(b.codigo || ""), undefined, { numeric: true })
+    compareText(a.nombre, b.nombre) * (sortDirection === "asc" ? 1 : -1)
   ));
   const totalPages = Math.max(Math.ceil(serviciosOrdenados.length / itemsPerPage), 1);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -187,8 +201,21 @@ export function useServicios() {
     }
   }
 
+  function handleExport() {
+    try {
+      exportServiciosToExcel(servicios);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "No se pudo exportar la lista de servicios.");
+    }
+  }
+
   function clearFilters() {
+    setSearchTerm("");
     setFilterEstado("todos");
+    setFilterCategoria("todos");
+    setFilterPrecioMin("");
+    setFilterPrecioMax("");
+    setSortDirection("asc");
     setShowFilter(false);
     setCurrentPage(1);
   }
@@ -203,17 +230,42 @@ export function useServicios() {
     setCurrentPage(1);
   }
 
+  function handleFilterCategoriaChange(value) {
+    setFilterCategoria(value);
+    setCurrentPage(1);
+  }
+
+  function handleFilterPrecioMinChange(value) {
+    setFilterPrecioMin(value);
+    setCurrentPage(1);
+  }
+
+  function handleFilterPrecioMaxChange(value) {
+    setFilterPrecioMax(value);
+    setCurrentPage(1);
+  }
+
+  function handleSortDirectionChange(direction) {
+    setSortDirection(direction);
+    setCurrentPage(1);
+  }
+
   function handleViewModeChange(nextMode) {
     setViewMode(nextMode);
     setCurrentPage(1);
   }
 
   return {
-    servicios, searchTerm, setSearchTerm, filterEstado, setFilterEstado, loading, saving, error, loadServicios,
+    servicios, searchTerm, setSearchTerm, filterEstado, setFilterEstado,
+    filterCategoria, filterPrecioMin, filterPrecioMax, loading, saving, error, loadServicios,
+    sortDirection,
     showFilter, setShowFilter, viewMode, setViewMode, modal, selected, form, setForm, deleteId, setDeleteId,
     filteredServicios, stats, currentPage, setCurrentPage, totalPages, startIndex, endIndex, paginatedServicios,
     openCrear, openEditar, openVer, backToPreviousDetail, backFromForm, detailHistory, closeModal, handleToggleEstado, handleGuardar, handleEliminar, clearFilters,
+    handleExport,
     openCrearSubservicio,
-    handleSearchChange, handleFilterEstadoChange, handleViewModeChange,
+    handleSearchChange, handleFilterEstadoChange, handleFilterCategoriaChange,
+    handleFilterPrecioMinChange, handleFilterPrecioMaxChange,
+    handleSortDirectionChange, handleViewModeChange,
   };
 }

@@ -68,6 +68,14 @@ export function CitaDetailModal({ cita, onClose, onEditar, onAnular }) {
               {cita.observaciones || "Sin observaciones"}
             </p>
           </div>
+          {cita.estado === "cancelada" && (
+            <div>
+              <h3 className="mb-2 font-semibold">Motivo de anulación</h3>
+              <p className="rounded-lg border border-border bg-accent/30 p-3 text-sm text-muted-foreground">
+                {cita.motivo_anulacion || "Sin motivo registrado"}
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-between gap-3 border-t border-border pt-6">
             {cita.estado !== "cancelada" && (

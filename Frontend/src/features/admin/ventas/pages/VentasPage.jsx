@@ -1,5 +1,5 @@
-import { Plus, Ban } from "lucide-react";
-import { useRef } from "react";
+import { Plus, Ban, History } from "lucide-react";
+import { useRef, useState } from "react";
 import { useVentas } from "../hooks/useVentas";
 import { StatsRow } from "../components/StatsRow";
 import { SearchFilterBar } from "../components/SearchFilterBar";
@@ -9,32 +9,57 @@ import { ModalWrapper } from "../components/ModalWrapper";
 import { ModalFooter } from "../components/ModalFooter";
 import { FormVenta } from "../components/FormVenta";
 import { DetailField } from "../components/DetailField";
+import { HistorialVentasTable } from "../components/HistorialVentasTable";
 import { PaginationBar } from "../../components/PaginationBar";
 import { estadoConfig, getMetodoPagoNombre } from "../services/ventasData";
 import { getUsuarioNombre } from "../../vehiculos/services/vehiculosData";
+import { exportVentasToExcel } from "../services/ventasExport";
 
 export default function VentasPage() {
   const saleFormRef = useRef(null);
+  const [historyMode, setHistoryMode] = useState(false);
   const {
     ventas, searchTerm, filterEstado, setFilterEstado, error, loading, loadVentas, metodosPago, updatingSaleId,
     filterMetodo, setFilterMetodo, showFilters, setShowFilters,
     showModal, showDetailModal, showEditModal, showCancelModal, showActivateModal, activationStatus, selected, formData, setFormData,
     filtered, stats, currentPage, setCurrentPage, totalPages, startIndex, endIndex, paginatedVentas,
+    filteredHistoryVentas, historyFechaDesde, historyFechaHasta,
+    sortDirection,
+    historyTotalPages, historyStartIndex, historyEndIndex, paginatedHistoryVentas,
     handleNuevo, handleGuardarNuevo, handleVerDetalles, handleEditar,
     handleGuardarEdicion, handleAnular, handleConfirmarAnular, handleCambiarEstado, handleConfirmarActivacion, closeAll, clearFilters,
     handleSearchChange, handleFilterEstadoChange, handleFilterMetodoChange,
+    handleHistoryFechaDesdeChange, handleHistoryFechaHastaChange, clearHistoryDateFilter,
+    handleToggleSortDirection,
   } = useVentas();
+  const handleToggleHistory = () => {
+    setHistoryMode((current) => !current);
+    setCurrentPage(1);
+    setShowFilters(false);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Gestión de Ventas</h1>
-          <p className="text-muted-foreground mt-1">Registro y seguimiento de ventas del taller</p>
+          <h1 className="text-3xl font-semibold">{historyMode ? "Historial de Ventas" : "Gestión de Ventas"}</h1>
+          <p className="text-muted-foreground mt-1">{historyMode ? "Consulta las transacciones del taller, incluidas las anuladas" : "Registro y seguimiento de ventas del taller"}</p>
         </div>
-        <button onClick={handleNuevo} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors">
-          <Plus className="w-5 h-5" /> Nueva Venta
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleToggleHistory}
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 transition-colors hover:bg-accent"
+          >
+            <History className="h-5 w-5" />
+            {historyMode ? "Volver a Ventas" : "Historial"}
+          </button>
+          {!historyMode && (
+            <button onClick={handleNuevo} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors">
+              <Plus className="w-5 h-5" /> Nueva Venta
+            </button>
+          )}
+        </div>
       </div>
 
       {error && !showModal && !showEditModal && !showCancelModal && (
@@ -46,45 +71,110 @@ export default function VentasPage() {
 
       <StatsRow stats={stats} />
 
-      <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-        <SearchFilterBar
-          searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
-          showFilters={showFilters}
-          onToggleFilters={setShowFilters}
-          filterContent={
-            <FilterPanel
-            filterEstado={filterEstado}
-            onFilterEstadoChange={handleFilterEstadoChange}
-            filterMetodo={filterMetodo}
-            onFilterMetodoChange={handleFilterMetodoChange}
-            metodosPago={metodosPago}
-            onClear={clearFilters}
-            />
-          }
-        />
-
-        {loading
-          ? <div role="status" className="py-10 text-center text-muted-foreground">Cargando ventas...</div>
-          : <VentasTable
-            ventas={paginatedVentas}
-            onVerDetalles={handleVerDetalles}
-            onEditar={handleEditar}
-            onAnular={handleAnular}
-            onCambiarEstado={handleCambiarEstado}
-            updatingSaleId={updatingSaleId}
+      {historyMode ? (
+        <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+          <div className="mb-4">
+            <h2 className="font-semibold">Historial de transacciones</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Orden {sortDirection === "asc" ? "ascendente" : "descendente"} por total.
+            </p>
+          </div>
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <label className="text-sm font-medium">
+              Desde
+              <input
+                type="date"
+                value={historyFechaDesde}
+                onChange={(event) => handleHistoryFechaDesdeChange(event.target.value)}
+                className="mt-1 block rounded-lg border border-border bg-input-background px-3 py-2"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Hasta
+              <input
+                type="date"
+                value={historyFechaHasta}
+                onChange={(event) => handleHistoryFechaHastaChange(event.target.value)}
+                className="mt-1 block rounded-lg border border-border bg-input-background px-3 py-2"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={clearHistoryDateFilter}
+              disabled={!historyFechaDesde && !historyFechaHasta}
+              className="rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Limpiar fechas
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleSortDirection}
+              aria-label={`Cambiar a orden ${sortDirection === "asc" ? "descendente" : "ascendente"} por total`}
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-accent"
+            >
+              {sortDirection === "asc" ? "Ascendente" : "Descendente"}
+            </button>
+            <span className="ml-auto pb-2 text-sm text-muted-foreground">
+              {filteredHistoryVentas.length} {filteredHistoryVentas.length === 1 ? "venta" : "ventas"}
+            </span>
+          </div>
+          {loading
+            ? <div role="status" className="py-10 text-center text-muted-foreground">Cargando historial...</div>
+            : <HistorialVentasTable ventas={paginatedHistoryVentas} onVerDetalles={handleVerDetalles} />}
+          {!loading && <PaginationBar
+            currentPage={currentPage}
+            totalPages={historyTotalPages}
+            startIndex={historyStartIndex}
+            endIndex={historyEndIndex}
+            total={filteredHistoryVentas.length}
+            onPageChange={setCurrentPage}
+            itemName="ventas"
           />}
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+          <SearchFilterBar
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            showFilters={showFilters}
+            onToggleFilters={setShowFilters}
+            sortDirection={sortDirection}
+            onToggleSortDirection={handleToggleSortDirection}
+            onExport={() => exportVentasToExcel(ventas)}
+            filterContent={
+              <FilterPanel
+                filterEstado={filterEstado}
+                onFilterEstadoChange={handleFilterEstadoChange}
+                filterMetodo={filterMetodo}
+                onFilterMetodoChange={handleFilterMetodoChange}
+                metodosPago={metodosPago}
+                onClear={clearFilters}
+              />
+            }
+          />
 
-        {!loading && <PaginationBar
-          currentPage={currentPage}
-          totalPages={totalPages}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          total={filtered.length}
-          onPageChange={setCurrentPage}
-          itemName="ventas"
-        />}
-      </div>
+          {loading
+            ? <div role="status" className="py-10 text-center text-muted-foreground">Cargando ventas...</div>
+            : <VentasTable
+              ventas={paginatedVentas}
+              onVerDetalles={handleVerDetalles}
+              onEditar={handleEditar}
+              onAnular={handleAnular}
+              onCambiarEstado={handleCambiarEstado}
+              updatingSaleId={updatingSaleId}
+            />}
+
+          {!loading && <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            total={filtered.length}
+            onPageChange={setCurrentPage}
+            itemName="ventas"
+          />}
+        </div>
+      )}
 
       {showModal && (
         <ModalWrapper title="Nueva Venta" onClose={closeAll} maxWidth="max-w-6xl" tall>
@@ -148,7 +238,7 @@ export default function VentasPage() {
           </div>
           <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-border">
             <button onClick={closeAll} className="px-6 py-2 border border-border rounded-lg hover:bg-accent transition-colors">Cerrar</button>
-            <button onClick={() => handleEditar(selected)} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors">Editar Venta</button>
+            {!historyMode && <button onClick={() => handleEditar(selected)} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors">Editar Venta</button>}
           </div>
         </ModalWrapper>
       )}
