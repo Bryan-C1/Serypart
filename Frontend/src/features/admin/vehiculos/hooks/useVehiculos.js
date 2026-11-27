@@ -22,6 +22,7 @@ export function useVehiculos() {
   const [filterEstado, setFilterEstado] = useState("todos");
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState("table");
+  const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
 
   const itemsPerPage = viewMode === "cards" ? 6 : 10;
@@ -105,10 +106,14 @@ export function useVehiculos() {
     return matchSearch && matchEstado && matchCliente;
   });
 
+  const sortedVehiculos = [...filteredVehiculos].sort((a, b) => {
+    const comparison = (a.placa || "").localeCompare(b.placa || "");
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
   const totalPages = Math.max(Math.ceil(filteredVehiculos.length / itemsPerPage), 1);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedVehiculos = filteredVehiculos.slice(startIndex, endIndex);
+  const paginatedVehiculos = sortedVehiculos.slice(startIndex, endIndex);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -210,8 +215,83 @@ export function useVehiculos() {
     setCurrentPage(1);
   }
 
+  function handleSortToggle() {
+    setSortDirection((current) => current === "asc" ? "desc" : "asc");
+    setCurrentPage(1);
+  }
+
+  async function handleExportarExcel() {
+    setActionError("");
+    try {
+      const { default: ExcelJS } = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Vehículos", {
+        views: [{ state: "frozen", ySplit: 1 }],
+      });
+      worksheet.columns = [
+        { header: "Tipo de vehículo", key: "tipoVehiculo", width: 22 },
+        { header: "Placa", key: "placa", width: 16 },
+        { header: "Cliente", key: "cliente", width: 28 },
+        { header: "Marca", key: "marca", width: 20 },
+        { header: "Modelo", key: "modelo", width: 22 },
+        { header: "Color", key: "color", width: 18 },
+        { header: "Año", key: "anio", width: 12 },
+        { header: "Estado", key: "estado", width: 16 },
+        { header: "Fecha de registro", key: "fechaRegistro", width: 20 },
+      ];
+      worksheet.addRows(sortedVehiculos.map((vehiculo) => ({
+        tipoVehiculo: vehiculo.tipo_vehiculo || "",
+        placa: vehiculo.placa,
+        cliente: vehiculo.nombre_cliente || "",
+        marca: vehiculo.marca || "",
+        modelo: vehiculo.modelo || "",
+        color: vehiculo.color || "",
+        anio: vehiculo.año || "",
+        estado: vehiculo.estado === "anulado"
+          ? "Anulado"
+          : vehiculo.estado === "en_servicio"
+            ? "En Servicio"
+            : vehiculo.estado === "inactivo"
+              ? "Inactivo"
+              : "Activo",
+        fechaRegistro: vehiculo.fecha_registro || "",
+      })));
+
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.alignment = { horizontal: "left", vertical: "middle" };
+        });
+      });
+      const header = worksheet.getRow(1);
+      header.height = 24;
+      header.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      header.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF334155" },
+      };
+      worksheet.autoFilter = { from: "A1", to: `I${worksheet.rowCount}` };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "vehiculos.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (exportError) {
+      setActionError(`No se pudo exportar el archivo de vehículos: ${exportError.message}`);
+    }
+  }
+
   return {
     searchTerm, setSearchTerm, filterEstado, setFilterEstado, showFilter, setShowFilter, viewMode, setViewMode,
+    sortDirection,
     clienteId,
     loading, error: [vehiculosError, tiposError, usuariosError, actionError].filter(Boolean).join(" "),
     actionError, tiposError,
@@ -220,6 +300,6 @@ export function useVehiculos() {
     modal, selected, form, setForm, deleteId, setDeleteId,
     filteredVehiculos, stats, currentPage, setCurrentPage, totalPages, startIndex, endIndex, paginatedVehiculos,
     openCrear, openEditar, openVer, closeModal, handleGuardar, handleEliminar, handleToggleEstado,
-    handleSearchChange, handleFilterChange, handleViewModeChange,
+    handleSearchChange, handleFilterChange, handleViewModeChange, handleSortToggle, handleExportarExcel,
   };
 }

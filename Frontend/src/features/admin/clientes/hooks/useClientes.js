@@ -11,7 +11,7 @@ export function useClientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("todos");
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState("nombre-asc");
+  const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [showModal, setShowModal] = useState(false);
@@ -41,8 +41,8 @@ export function useClientes() {
   const filteredClientes = clientes.filter((c) => {
     const matchSearch =
       c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.cedula.toLowerCase().includes(searchTerm.toLowerCase());
+      c.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.numeroDocumento.toLowerCase().includes(searchTerm.toLowerCase());
     const matchEstado = filterEstado === "anulados"
       ? c.estado === "anulado"
       : filterEstado === "todos"
@@ -52,18 +52,8 @@ export function useClientes() {
   });
 
   const sortedClientes = [...filteredClientes].sort((a, b) => {
-    switch (sortBy) {
-      case "nombre-asc":
-        return a.nombre.localeCompare(b.nombre);
-      case "nombre-desc":
-        return b.nombre.localeCompare(a.nombre);
-      case "vehiculos-asc":
-        return a.vehiculos - b.vehiculos;
-      case "vehiculos-desc":
-        return b.vehiculos - a.vehiculos;
-      default:
-        return 0;
-    }
+    const comparison = a.nombre.localeCompare(b.nombre);
+    return sortDirection === "asc" ? comparison : -comparison;
   });
 
   const totalPages = Math.ceil(sortedClientes.length / itemsPerPage);
@@ -81,15 +71,82 @@ export function useClientes() {
     setCurrentPage(1);
   };
 
-  const handleSortChange = (value) => {
-    setSortBy(value);
+  const handleSortToggle = () => {
+    setSortDirection((current) => current === "asc" ? "desc" : "asc");
     setCurrentPage(1);
   };
 
   const clearFilters = () => {
     handleFilterChange("todos");
     handleSearchChange("");
-    setSortBy("nombre-asc");
+    setSortDirection("asc");
+  };
+
+  const handleExportarExcel = async () => {
+    setError("");
+    try {
+      const { default: ExcelJS } = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Clientes", {
+        views: [{ state: "frozen", ySplit: 1 }],
+      });
+      worksheet.columns = [
+        { header: "Nombre", key: "nombre", width: 22 },
+        { header: "Apellido", key: "apellido", width: 22 },
+        { header: "Tipo de documento", key: "tipoDocumento", width: 20 },
+        { header: "Número de documento", key: "numeroDocumento", width: 22 },
+        { header: "Teléfono", key: "telefono", width: 18 },
+        { header: "Dirección", key: "direccion", width: 32 },
+        { header: "Correo electrónico", key: "email", width: 30 },
+        { header: "Fecha de registro", key: "fechaRegistro", width: 20 },
+        { header: "Última visita", key: "ultimaVisita", width: 18 },
+        { header: "Vehículos", key: "vehiculos", width: 14 },
+        { header: "Estado", key: "estado", width: 16 },
+      ];
+      worksheet.addRows(sortedClientes.map((cliente) => ({
+        nombre: cliente.nombre,
+        apellido: cliente.apellido,
+        tipoDocumento: cliente.tipoDocumento,
+        numeroDocumento: cliente.numeroDocumento,
+        telefono: cliente.telefono,
+        direccion: cliente.direccion,
+        email: cliente.email,
+        fechaRegistro: cliente.fechaRegistro,
+        ultimaVisita: cliente.ultimaVisita,
+        vehiculos: cliente.vehiculos,
+        estado: cliente.estado === "anulado" ? "Anulado" : cliente.estado === "activo" ? "Activo" : "Inactivo",
+      })));
+
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.alignment = { horizontal: "left", vertical: "middle" };
+        });
+      });
+      const header = worksheet.getRow(1);
+      header.height = 24;
+      header.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      header.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF334155" },
+      };
+      worksheet.autoFilter = { from: "A1", to: `K${worksheet.rowCount}` };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "clientes.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (exportError) {
+      setError(`No se pudo exportar el archivo de clientes: ${exportError.message}`);
+    }
   };
 
   const stats = {
@@ -157,6 +214,15 @@ export function useClientes() {
       !formData.apellido.trim() ||
       (formData.telefono && !/^\d+$/.test(formData.telefono))
     ) return;
+    const numeroDocumento = formData.numeroDocumento.trim();
+    const documentoDuplicado = clientes.some((cliente) =>
+      cliente.id !== selectedCliente.id &&
+      String(cliente.numeroDocumento || "").trim() === numeroDocumento
+    );
+    if (documentoDuplicado) {
+      setError("Ya existe otro cliente con ese número de documento.");
+      return;
+    }
     setError("");
     try {
       const cliente = await updateCliente(selectedCliente.id, formData);
@@ -225,12 +291,12 @@ export function useClientes() {
   };
 
   return {
-    searchTerm, filterEstado, showFilters, setShowFilters, sortBy, loading, error, loadClientes,
+    searchTerm, filterEstado, showFilters, setShowFilters, sortDirection, loading, error, loadClientes,
     currentPage, setCurrentPage, totalPages, startIndex, endIndex,
     sortedClientes, paginatedClientes, stats,
     showModal, showDetailModal, showEditModal, showDeleteModal,
     selectedCliente, formData, setFormData,
-    handleSearchChange, handleFilterChange, handleSortChange, clearFilters,
+    handleSearchChange, handleFilterChange, handleSortToggle, clearFilters, handleExportarExcel,
     handleNuevo, handleGuardarNuevo, handleVerDetalles, handleEditar,
     handleGuardarEdicion, handleEliminar, handleConfirmarEliminar,
     handleToggleEstado, closeAll,

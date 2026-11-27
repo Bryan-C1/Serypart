@@ -67,29 +67,6 @@ async function validateMechanic(connection, mechanicId) {
   }
 }
 
-async function validateMechanicAttendance(connection, mechanicId, date, time) {
-  const [rows] = await connection.query(
-    `SELECT TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
-            TIME_FORMAT(hora_fin, '%H:%i') AS hora_fin
-       FROM asistencias_mecanicos
-      WHERE id_mecanico = ? AND fecha = ?`,
-    [mechanicId, date]
-  );
-  if (rows.length === 0) {
-    const error = new Error('El mecánico no tiene asistencia registrada para la fecha seleccionada.');
-    error.status = 409;
-    throw error;
-  }
-  const appointmentTime = String(time || '').slice(0, 5);
-  if (appointmentTime < rows[0].hora_inicio || appointmentTime >= rows[0].hora_fin) {
-    const error = new Error(
-      `La hora de la cita debe estar dentro de la asistencia del mecánico (${rows[0].hora_inicio}–${rows[0].hora_fin}).`
-    );
-    error.status = 409;
-    throw error;
-  }
-}
-
 async function addAppointmentHistory(connection, appointmentId, vehicleId, date) {
   const [services] = await connection.query(
     `SELECT GROUP_CONCAT(s.nombre ORDER BY da.id_detalle_agendamiento SEPARATOR ', ') AS nombres
@@ -171,6 +148,25 @@ async function getAll() {
   return withServices(rows);
 }
 
+async function getByVehicleId(vehicleId) {
+  await ensureClientRelationColumns();
+  const [rows] = await pool.query(
+    `SELECT a.*, s.nombre AS servicio_nombre, c.nombre AS cliente_nombre,
+            c.apellido AS cliente_apellido, v.placa,
+            um.nombre AS mecanico_nombre, um.apellido AS mecanico_apellido
+       FROM ${TABLE} a
+       LEFT JOIN servicios s ON s.id_servicio = a.id_servicio
+       LEFT JOIN clientes c ON c.id_cliente = a.id_cliente
+       LEFT JOIN vehiculos v ON v.id_vehiculo = a.id_vehiculo
+       LEFT JOIN mecanicos m ON m.id_mecanico = a.id_mecanico
+       LEFT JOIN usuarios um ON um.id_usuario = m.id_usuario
+      WHERE a.id_vehiculo = ?
+      ORDER BY a.fecha_cita DESC, a.hora_cita DESC, a.${PK} DESC`,
+    [vehicleId]
+  );
+  return withServices(rows);
+}
+
 async function getById(id) {
   await ensureClientRelationColumns();
   const [rows] = await pool.query(
@@ -202,9 +198,6 @@ async function create(data) {
     const [clients] = await connection.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [data.id_cliente]);
     if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
     await validateMechanic(connection, mechanicId);
-    if (data.estado !== 'cancelada') {
-      await validateMechanicAttendance(connection, mechanicId, data.fecha_cita, data.hora_cita);
-    }
     const [result] = await connection.query(
       `INSERT INTO ${TABLE} (id_servicio, id_vehiculo, id_usuario, id_cliente, id_mecanico, fecha_cita, hora_cita, estado, motivo_anulacion, observaciones, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [serviceIds[0], data.id_vehiculo, clients[0].id_usuario, data.id_cliente, mechanicId, data.fecha_cita, data.hora_cita, data.estado, motivoAnulacion, data.observaciones || '', data.fecha_registro]
@@ -239,8 +232,12 @@ async function update(id, data) {
   try {
     await connection.beginTransaction();
     const [existingAppointments] = await connection.query(
+<<<<<<< HEAD
+      `SELECT estado, id_mecanico
+=======
       `SELECT estado, motivo_anulacion, id_mecanico, DATE_FORMAT(fecha_cita, '%Y-%m-%d') AS fecha_cita,
               TIME_FORMAT(hora_cita, '%H:%i') AS hora_cita
+>>>>>>> origin/main
          FROM ${TABLE} WHERE ${PK} = ? FOR UPDATE`,
       [id]
     );
@@ -254,14 +251,7 @@ async function update(id, data) {
       : existingAppointment.motivo_anulacion;
     const [clients] = await connection.query('SELECT id_usuario FROM clientes WHERE id_cliente = ?', [data.id_cliente]);
     if (clients.length === 0) throw new Error('El cliente seleccionado no existe.');
-    const assignedMechanicId = mechanicId ?? existingAppointments[0].id_mecanico;
     if (mechanicId !== null) await validateMechanic(connection, mechanicId);
-    const scheduleChanged = Number(assignedMechanicId) !== Number(existingAppointments[0].id_mecanico)
-      || data.fecha_cita !== existingAppointments[0].fecha_cita
-      || String(data.hora_cita || '').slice(0, 5) !== existingAppointments[0].hora_cita;
-    if (data.estado !== 'cancelada' && scheduleChanged) {
-      await validateMechanicAttendance(connection, assignedMechanicId, data.fecha_cita, data.hora_cita);
-    }
     await connection.query(
       `UPDATE ${TABLE} SET id_servicio = ?, id_vehiculo = ?, id_usuario = ?, id_cliente = ?, id_mecanico = COALESCE(?, id_mecanico), fecha_cita = ?, hora_cita = ?, estado = ?, motivo_anulacion = ?, observaciones = ?, fecha_registro = ? WHERE ${PK} = ?`,
       [serviceIds[0], data.id_vehiculo, clients[0].id_usuario, data.id_cliente, mechanicId, data.fecha_cita, data.hora_cita, data.estado, motivoAnulacion, data.observaciones || '', data.fecha_registro, id]
@@ -302,4 +292,4 @@ async function remove(id) {
   }
 }
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { getAll, getByVehicleId, getById, create, update, remove };

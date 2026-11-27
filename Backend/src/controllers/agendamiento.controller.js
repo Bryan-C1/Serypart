@@ -19,6 +19,16 @@ async function getAll(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function getByVehicleId(req, res, next) {
+  try {
+    const rows = await AgendamientoModel.getByVehicleId(req.params.id);
+    if (await isClientRole(req.user)) {
+      return res.json(rows.filter((row) => String(row.id_usuario) === String(req.user.id_usuario)));
+    }
+    res.json(rows);
+  } catch (err) { next(err); }
+}
+
 async function getById(req, res, next) {
   try {
     const row = await AgendamientoModel.getById(req.params.id);
@@ -50,4 +60,4 @@ async function remove(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { getAll, getByVehicleId, getById, create, update, remove };

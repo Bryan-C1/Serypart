@@ -11,13 +11,13 @@ import { PaginationBar } from "../../components/PaginationBar";
 
 export default function VehiculosPage() {
   const {
-    searchTerm, filterEstado, setFilterEstado, showFilter, setShowFilter, viewMode, setViewMode,
+    searchTerm, filterEstado, setFilterEstado, showFilter, setShowFilter, viewMode, setViewMode, sortDirection,
     clienteId, usuarios, usuariosLoading, usuariosError, loadUsuarios,
     loading, error, loadVehiculos, loadTiposVehiculo, tiposVehiculo, tiposVehiculoLoading, tiposError, actionError,
     modal, selected, form, setForm, deleteId, setDeleteId,
     filteredVehiculos, stats, currentPage, setCurrentPage, totalPages, startIndex, endIndex, paginatedVehiculos,
     openCrear, openEditar, openVer, closeModal, handleGuardar, handleEliminar, handleToggleEstado,
-    handleSearchChange, handleFilterChange, handleViewModeChange,
+    handleSearchChange, handleFilterChange, handleViewModeChange, handleSortToggle, handleExportarExcel,
   } = useVehiculos();
 
   return (
@@ -65,6 +65,9 @@ export default function VehiculosPage() {
           onToggleFilter={setShowFilter}
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
+          sortDirection={sortDirection}
+          onSortToggle={handleSortToggle}
+          onExport={handleExportarExcel}
         />
 
         {loading ? (

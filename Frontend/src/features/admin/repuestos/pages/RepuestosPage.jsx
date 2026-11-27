@@ -21,6 +21,9 @@ export default function RepuestosPage() {
   const {
     repuestos,
     marcas,
+    loading,
+    error,
+    loadRepuestos,
     getMarcaNombre,
     searchTerm,
     filteredRepuestos,
@@ -86,6 +89,19 @@ export default function RepuestosPage() {
         </button>
       </div>
 
+      {error && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={loadRepuestos}
+            className="shrink-0 font-medium underline underline-offset-2"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       <StatsRow repuestos={repuestos} lowStockCount={lowStockCount} />
 
       <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
@@ -136,29 +152,36 @@ export default function RepuestosPage() {
           </button>
         </div>
 
-        <RepuestosTable
-          repuestos={paginatedRepuestos}
-          getMarcaNombre={getMarcaNombre}
-          onVerDetalles={handleVerDetalles}
-          onEditar={handleEditar}
-          onAnular={handleAnular}
-          onReactivar={handleReactivar}
-          onCambiarEstado={handleCambiarEstado}
-        />
+        {loading ? (
+          <p className="py-10 text-center text-muted-foreground">Cargando repuestos...</p>
+        ) : (
+          <RepuestosTable
+            repuestos={paginatedRepuestos}
+            getMarcaNombre={getMarcaNombre}
+            onVerDetalles={handleVerDetalles}
+            onEditar={handleEditar}
+            onAnular={handleAnular}
+            onReactivar={handleReactivar}
+            onCambiarEstado={handleCambiarEstado}
+          />
+        )}
 
-        <PaginationBar
-          currentPage={currentPage}
-          totalPages={totalPages}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          total={filteredRepuestos.length}
-          onPageChange={setCurrentPage}
-          itemName="repuestos"
-        />
+        {!loading && (
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            total={filteredRepuestos.length}
+            onPageChange={setCurrentPage}
+            itemName="repuestos"
+          />
+        )}
       </div>
 
       {showModal && (
         <ModalWrapper title="Nuevo Repuesto" onClose={closeAll}>
+          {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <FormRepuesto
             formData={formData}
             setFormData={setFormData}
@@ -228,6 +251,7 @@ export default function RepuestosPage() {
 
       {showEditModal && selectedRepuesto && (
         <ModalWrapper title="Editar Repuesto" onClose={closeAll}>
+          {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <FormRepuesto
             formData={formData}
             setFormData={setFormData}
@@ -243,6 +267,7 @@ export default function RepuestosPage() {
 
       {showAnularModal && selectedRepuesto && (
         <ModalWrapper title="Anular Repuesto" onClose={closeAll}>
+          {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <div className="space-y-4">
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
               <Ban className="w-8 h-8 text-destructive shrink-0" />
@@ -275,6 +300,7 @@ export default function RepuestosPage() {
         <ModalWrapper
           title="Registrar Marca"
           onClose={() => setShowMarcaModal(false)}>
+          {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">

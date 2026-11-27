@@ -192,6 +192,22 @@ async function update(id, data) {
       await connection.rollback();
       return null;
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'numero_documento') && data.numero_documento != null) {
+      const numeroDocumento = String(data.numero_documento).trim();
+      if (numeroDocumento) {
+        const [duplicateRows] = await connection.query(
+          `SELECT ${PK} FROM ${TABLE}
+            WHERE TRIM(numero_documento) = ? AND ${PK} <> ?
+            LIMIT 1 FOR UPDATE`,
+          [numeroDocumento, id]
+        );
+        if (duplicateRows.length > 0) {
+          const error = new Error('Ya existe otro cliente con ese número de documento.');
+          error.status = 409;
+          throw error;
+        }
+      }
+    }
     const previousState = existingRows[0].estado;
     const assignments = [];
     const values = [];

@@ -1,9 +1,13 @@
 import { Package, AlertTriangle } from "lucide-react";
 
 export function StatsRow({ repuestos, lowStockCount }) {
+  const inventoryValue = repuestos.reduce(
+    (total, repuesto) => total + Number(repuesto.stock) * Number(repuesto.precio_unitario),
+    0,
+  );
   const items = [
     { label: "Total Repuestos", value: repuestos.length, color: "bg-blue-500", icon: Package },
-    { label: "Valor Inventario", value: "$12,450", color: "bg-success", icon: Package },
+    { label: "Valor Inventario", value: `$${inventoryValue.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "bg-success", icon: Package },
     { label: "Stock Bajo", value: lowStockCount, color: "bg-warning", icon: AlertTriangle },
     { label: "Agotados", value: repuestos.filter((r) => r.estado === "agotado").length, color: "bg-destructive", icon: AlertTriangle },
   ];

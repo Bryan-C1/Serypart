@@ -53,9 +53,6 @@ export default function Registro() {
     const email = values.email.trim();
 
     try {
-      if (telefono.length !== 10) {
-        throw new Error("El teléfono debe tener exactamente 10 dígitos.");
-      }
       await apiRequest("/auth/register", {
         method: "POST",
         authenticated: false,

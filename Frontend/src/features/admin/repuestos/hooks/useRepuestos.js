@@ -1,15 +1,20 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { emptyForm } from "../services/repuestosData";
 import {
-  initialRepuestos,
-  emptyForm,
-  marcasRepuesto,
-} from "../services/repuestosData";
+  createMarcaRepuesto,
+  createRepuesto,
+  getMarcasRepuesto,
+  getRepuestos,
+  updateRepuesto,
+} from "../services/repuestosService";
 
 const itemsPerPage = 8;
 
 export function useRepuestos() {
-  const [repuestos, setRepuestos] = useState(initialRepuestos);
-  const [marcas, setMarcas] = useState(marcasRepuesto);
+  const [repuestos, setRepuestos] = useState([]);
+  const [marcas, setMarcas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("todos");
   const [showFilter, setShowFilter] = useState(false);
@@ -21,6 +26,27 @@ export function useRepuestos() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRepuesto, setSelectedRepuesto] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+
+  const loadRepuestos = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [repuestoRows, marcaRows] = await Promise.all([
+        getRepuestos(),
+        getMarcasRepuesto(),
+      ]);
+      setRepuestos(repuestoRows);
+      setMarcas(marcaRows);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRepuestos();
+  }, [loadRepuestos]);
 
   const filteredRepuestos = repuestos.filter(repuesto => {
     const matchSearch =
@@ -53,16 +79,24 @@ export function useRepuestos() {
   };
 
   const handleNuevo = () => {
+    setError("");
     setFormData(emptyForm);
     setShowModal(true);
   };
 
-  const handleGuardarNuevo = () => {
+  const handleGuardarNuevo = async () => {
     if (!formData.nombre.trim()) return;
-    const newId = Math.max(...repuestos.map(r => r.id_repuesto)) + 1;
-    const estado = calcularEstado(formData.stock, formData.stock_minimo);
-    setRepuestos([...repuestos, { ...formData, id_repuesto: newId, estado }]);
-    setShowModal(false);
+    setError("");
+    try {
+      const repuesto = await createRepuesto({
+        ...formData,
+        estado: calcularEstado(Number(formData.stock), Number(formData.stock_minimo)),
+      });
+      setRepuestos((current) => [...current, repuesto]);
+      setShowModal(false);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
   };
 
   const handleVerDetalles = repuesto => {
@@ -71,6 +105,7 @@ export function useRepuestos() {
   };
 
   const handleEditar = repuesto => {
+    setError("");
     setSelectedRepuesto(repuesto);
     setFormData({
       nombre: repuesto.nombre,
@@ -85,46 +120,71 @@ export function useRepuestos() {
     setShowEditModal(true);
   };
 
-  const handleCambiarEstado = (repuesto, estado) => {
+  const handleCambiarEstado = async (repuesto, estado) => {
     if (!repuesto || repuesto.estado === "anulado") return;
-    setRepuestos(
-      repuestos.map(item =>
-        item.id_repuesto === repuesto.id_repuesto ? { ...item, estado } : item,
-      ),
-    );
+    setError("");
+    try {
+      const updated = await updateRepuesto(repuesto.id_repuesto, { ...repuesto, estado });
+      setRepuestos((current) => current.map((item) =>
+        item.id_repuesto === updated.id_repuesto ? updated : item
+      ));
+    } catch (requestError) {
+      setError(requestError.message);
+    }
   };
-  const handleReactivar = (repuesto) => {
+  const handleReactivar = async (repuesto) => {
     const estado = calcularEstado(repuesto.stock, repuesto.stock_minimo);
-    setRepuestos((current) => current.map((item) => item.id_repuesto === repuesto.id_repuesto
-      ? { ...item, estado }
-      : item));
-    if (filterEstado === "anulados") setFilterEstado("todos");
-    setCurrentPage(1);
+    setError("");
+    try {
+      const updated = await updateRepuesto(repuesto.id_repuesto, { ...repuesto, estado });
+      setRepuestos((current) => current.map((item) => item.id_repuesto === updated.id_repuesto
+        ? updated
+        : item));
+      if (filterEstado === "anulados") setFilterEstado("todos");
+      setCurrentPage(1);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
   };
 
-  const handleGuardarEdicion = () => {
+  const handleGuardarEdicion = async () => {
     if (!selectedRepuesto || !formData.nombre.trim()) return;
-    setRepuestos(
-      repuestos.map(r =>
-        r.id_repuesto === selectedRepuesto.id_repuesto
-          ? { ...formData, estado: r.estado === "anulado" ? "anulado" : formData.estado, id_repuesto: r.id_repuesto }
-          : r,
-      ),
-    );
-    setShowEditModal(false);
+    setError("");
+    try {
+      const updated = await updateRepuesto(selectedRepuesto.id_repuesto, {
+        ...formData,
+        estado: selectedRepuesto.estado === "anulado" ? "anulado" : formData.estado,
+      });
+      setRepuestos((current) => current.map((item) =>
+        item.id_repuesto === updated.id_repuesto ? updated : item
+      ));
+      setShowEditModal(false);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
   };
 
   const handleAnular = repuesto => {
+    setError("");
     setSelectedRepuesto(repuesto);
     setShowAnularModal(true);
   };
 
-  const handleConfirmarAnular = () => {
+  const handleConfirmarAnular = async () => {
     if (!selectedRepuesto) return;
-    setRepuestos(
-      repuestos.map(r => r.id_repuesto === selectedRepuesto.id_repuesto ? { ...r, estado: "anulado" } : r),
-    );
-    setShowAnularModal(false);
+    setError("");
+    try {
+      const updated = await updateRepuesto(selectedRepuesto.id_repuesto, {
+        ...selectedRepuesto,
+        estado: "anulado",
+      });
+      setRepuestos((current) => current.map((item) =>
+        item.id_repuesto === updated.id_repuesto ? updated : item
+      ));
+      setShowAnularModal(false);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
   };
 
   const closeAll = () => {
@@ -133,16 +193,25 @@ export function useRepuestos() {
     setShowEditModal(false);
     setShowDetailModal(false);
     setSelectedRepuesto(null);
+    setError("");
   };
 
   const getMarcaNombre = id =>
     marcas.find(m => m.id === Number(id))?.nombre || "—";
 
-  const handleAgregarMarca = nombre => {
-    if (!nombre.trim()) return;
-    const newId = marcas.length ? Math.max(...marcas.map(m => m.id)) + 1 : 1;
-    setMarcas([...marcas, { id: newId, nombre: nombre.trim() }]);
-    setShowMarcaModal(false);
+  const handleAgregarMarca = async nombre => {
+    if (!nombre.trim()) {
+      setError("Escribe el nombre de la marca.");
+      return;
+    }
+    setError("");
+    try {
+      const marca = await createMarcaRepuesto(nombre);
+      setMarcas((current) => [...current, marca]);
+      setShowMarcaModal(false);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
   };
 
   const handleSearchChange = value => {
@@ -158,6 +227,9 @@ export function useRepuestos() {
   return {
     repuestos,
     marcas,
+    loading,
+    error,
+    loadRepuestos,
     getMarcaNombre,
     searchTerm,
     setSearchTerm,

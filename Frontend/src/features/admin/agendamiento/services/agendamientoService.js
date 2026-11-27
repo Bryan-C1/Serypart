@@ -58,6 +58,12 @@ export async function getCitas() {
   return citas;
 }
 
+export async function getHistorialVehiculo(vehicleId) {
+  const rows = await apiRequest(`/agendamiento/vehiculo/${vehicleId}/historial`);
+  if (!Array.isArray(rows)) throw new Error("La API devolvió un formato inválido para el historial del vehículo.");
+  return rows.map(fromApi);
+}
+
 export async function getAgendamientoCatalogs() {
   const [clientes, vehiculos, servicios, mecanicos] = await Promise.all([
     getClientesActivos(),
