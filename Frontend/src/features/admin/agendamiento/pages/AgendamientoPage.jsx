@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { StatusConfirmModal } from "../../components/StatusConfirmModal";
 import { useAgendamiento } from "../hooks/useAgendamiento";
-import { getFechaLocalActual } from "../services/agendamientoData";
+import { getFechaLocalActual, getUsuarioNombre } from "../services/agendamientoData";
 import { MonthCalendarCard } from "../components/MonthCalendarCard";
 import { CitaDetailModal } from "../components/CitaDetailModal";
 import { TodayAppointmentsList } from "../components/TodayAppointmentsList";
@@ -13,11 +13,14 @@ import { NewCitaModal } from "../components/NewCitaModal";
 export default function AgendamientoPage() {
   const [citaDetalle, setCitaDetalle] = useState(null);
   const [citaPendienteEdicion, setCitaPendienteEdicion] = useState(null);
+  const [motivoAnulacion, setMotivoAnulacion] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
   const [fechaCitasVisible, setFechaCitasVisible] = useState(getFechaLocalActual);
   const {
     showModal, selectedCita, selectedDate, days, blanks, citas, monthLabel, currentDate,
     catalogs, catalogsLoading, catalogsError, loading, error, saving, loadCitas, loadCatalogs,
     cambiarMes, volverAlDiaActual, navegarAFecha, abrirNuevaCita, abrirEdicion, cerrarModal, anularCita, cambiarEstadoCita, handleGuardarCita,
+    handleExportCitas,
   } = useAgendamiento();
   const [searchParams] = useSearchParams();
   const [filterEstado, setFilterEstado] = useState("todos");
@@ -34,6 +37,12 @@ export default function AgendamientoPage() {
       : filterEstado === "anulados"
         ? cita.estado === "cancelada"
         : cita.estado === filterEstado);
+  const citasOrdenadas = [...citasFiltradas].sort((first, second) => {
+    const firstClient = getUsuarioNombre(first.id_usuario, first.nombre_cliente);
+    const secondClient = getUsuarioNombre(second.id_usuario, second.nombre_cliente);
+    const comparison = firstClient.localeCompare(secondClient, "es", { sensitivity: "base" });
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
   const vistaFiltrada = vehiculoId || clienteId;
   const citasFiltradasKey = citasFiltradas.map((cita) => `${cita.id}:${cita.fecha_cita}`).join("|");
   const irAlDiaActual = () => {
@@ -41,8 +50,18 @@ export default function AgendamientoPage() {
     setFechaCitasVisible(getFechaLocalActual());
   };
   const handleCambiarEstadoCita = async (cita, estado) => {
+    if (estado === "cancelada") {
+      setCitaPendienteEdicion({ ...cita, accion: "anular" });
+      setMotivoAnulacion("");
+      return false;
+    }
     const updated = await cambiarEstadoCita(cita, estado);
     if (updated && cita.estado === "cancelada" && filterEstado === "anulados") setFilterEstado("todos");
+    return updated;
+  };
+  const solicitarAnulacion = (cita) => {
+    setCitaPendienteEdicion({ ...cita, accion: "anular" });
+    setMotivoAnulacion("");
   };
 
   useEffect(() => {
@@ -141,7 +160,16 @@ export default function AgendamientoPage() {
           : <TodayAppointmentsList citas={citasFiltradas} fecha={fechaCitasVisible} onCitaClick={setCitaDetalle} />}
       </div>
 
-      {!loading && <UpcomingAppointmentsTable citas={citasFiltradas} onCitaClick={setCitaDetalle} onChangeStatus={handleCambiarEstadoCita} />}
+      {!loading && (
+        <UpcomingAppointmentsTable
+          citas={citasOrdenadas}
+          onCitaClick={setCitaDetalle}
+          onChangeStatus={handleCambiarEstadoCita}
+          sortDirection={sortDirection}
+          onToggleSortDirection={() => setSortDirection((direction) => direction === "asc" ? "desc" : "asc")}
+          onExport={() => handleExportCitas(citasOrdenadas)}
+        />
+      )}
 
       <NewCitaModal
         open={showModal}
@@ -162,10 +190,11 @@ export default function AgendamientoPage() {
         onClose={() => setCitaDetalle(null)}
         onEditar={() => {
           setCitaPendienteEdicion(citaDetalle);
+          setMotivoAnulacion("");
           setCitaDetalle(null);
         }}
         onAnular={() => {
-          setCitaPendienteEdicion({ ...citaDetalle, accion: "anular" });
+          solicitarAnulacion(citaDetalle);
           setCitaDetalle(null);
         }}
       />
@@ -177,11 +206,23 @@ export default function AgendamientoPage() {
         title={citaPendienteEdicion?.accion === "anular" ? "Anular cita" : "Editar cita"}
         actionText={citaPendienteEdicion?.accion === "anular" ? "anular" : "editar"}
         actionLabel={citaPendienteEdicion?.accion === "anular" ? "Anular cita" : "Editar cita"}
-        onCancel={() => setCitaPendienteEdicion(null)}
-        onConfirm={() => {
-          if (citaPendienteEdicion.accion === "anular") anularCita(citaPendienteEdicion);
-          else abrirEdicion(citaPendienteEdicion);
+        reasonRequired={citaPendienteEdicion?.accion === "anular"}
+        reasonValue={motivoAnulacion}
+        onReasonChange={setMotivoAnulacion}
+        errorMessage={citaPendienteEdicion?.accion === "anular" ? error : ""}
+        onCancel={() => {
           setCitaPendienteEdicion(null);
+          setMotivoAnulacion("");
+        }}
+        onConfirm={async () => {
+          if (citaPendienteEdicion.accion === "anular") {
+            const cancelled = await anularCita(citaPendienteEdicion, motivoAnulacion);
+            if (!cancelled) return;
+          } else {
+            abrirEdicion(citaPendienteEdicion);
+          }
+          setCitaPendienteEdicion(null);
+          setMotivoAnulacion("");
         }}
       />
     </div>

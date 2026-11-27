@@ -15,7 +15,7 @@ export function VentasTable({ ventas, onVerDetalles, onEditar, onAnular, onCambi
       <table className="w-full">
         <thead className="border-b border-border">
           <tr className="text-left">
-            <th className="pb-3 font-medium">Usuario</th>
+            <th className="pb-3 font-medium">Cliente</th>
             <th className="pb-3 font-medium">Total</th>
             <th className="pb-3 font-medium">Fecha de venta</th>
             <th className="pb-3 font-medium">Método</th>

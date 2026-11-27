@@ -1,15 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { getRecentActivityByPeriod, getPeriodoLabel } from "../services/dashboardData";
+import { getPeriodoLabel, getRecentActivityByPeriod } from "../services/dashboardData";
 
-export function RecentActivityList({ periodo }) {
+export function RecentActivityList({ data, range, periodLabel }) {
   const navigate = useNavigate();
-  const activities = getRecentActivityByPeriod(periodo);
+  const activities = getRecentActivityByPeriod(data, range);
 
   return (
     <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6 shadow-sm">
       <div className="mb-4">
         <h3 className="font-semibold">Actividad del período</h3>
-        <p className="text-xs text-muted-foreground mt-1">{getPeriodoLabel(periodo)}</p>
+        <p className="text-xs text-muted-foreground mt-1 capitalize">{periodLabel || getPeriodoLabel("month", range)}</p>
       </div>
       <div className="space-y-4">
         {activities.length === 0 ? (
@@ -28,7 +28,10 @@ export function RecentActivityList({ periodo }) {
                   <p className="text-sm text-muted-foreground">{activity.client}</p>
                 </div>
               </div>
-              <span className="text-sm text-muted-foreground">{activity.month}</span>
+              <span className="text-sm text-muted-foreground">
+                {new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short" })
+                  .format(new Date(`${activity.date}T12:00:00`))}
+              </span>
             </>
           );
           const className = "flex items-center justify-between py-3 border-b border-border last:border-0";

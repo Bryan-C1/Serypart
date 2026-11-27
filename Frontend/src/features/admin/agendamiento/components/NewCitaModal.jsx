@@ -242,7 +242,7 @@ export function NewCitaModal({ open, onClose, onSave, initialData, initialDate, 
                 <option value="programada">Programada</option>
                 <option value="en_proceso">En Proceso</option>
                 <option value="completada">Completada</option>
-                <option value="cancelada">Cancelada</option>
+                {initialData?.estado === "cancelada" && <option value="cancelada" disabled>Cancelada</option>}
               </SearchableSelect>
             </div>
           </div>

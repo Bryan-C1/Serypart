@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CITAS_UPDATED_EVENT, getCitasGuardadas } from "../services/agendamientoData";
 import { createCita, getAgendamientoCatalogs, getCitas, updateCita } from "../services/agendamientoService";
+import { exportCitasToExcel } from "../services/agendamientoExport";
 
 export function useAgendamiento() {
   const [citas, setCitas] = useState(getCitasGuardadas);
@@ -101,10 +102,24 @@ export function useAgendamiento() {
     setSelectedDate("");
   };
 
-  const anularCita = async (cita) => {
+  const anularCita = async (cita, motivoAnulacion) => {
+    const motivo = String(motivoAnulacion || "").trim();
+    if (!motivo) {
+      setError("Debes registrar el motivo de anulación de la cita.");
+      return false;
+    }
+    if (motivo.length > 500) {
+      setError("El motivo de anulación no puede superar los 500 caracteres.");
+      return false;
+    }
+
     setError("");
     try {
-      const updated = await updateCita(cita.id, { ...cita, estado: "cancelada" }, cita.servicios || []);
+      const updated = await updateCita(cita.id, {
+        ...cita,
+        estado: "cancelada",
+        motivo_anulacion: motivo,
+      }, cita.servicios || []);
       setCitas((current) => current.map((item) => item.id === updated.id ? updated : item));
       return true;
     } catch (requestError) {
@@ -114,6 +129,10 @@ export function useAgendamiento() {
   };
 
   const cambiarEstadoCita = async (cita, estado) => {
+    if (estado === "cancelada") {
+      setError("Para anular una cita debes registrar el motivo.");
+      return false;
+    }
     setError("");
     try {
       const updated = await updateCita(cita.id, { ...cita, estado }, cita.servicios || []);
@@ -127,6 +146,10 @@ export function useAgendamiento() {
 
   const handleGuardarCita = async (form, serviciosSeleccionados) => {
     if (savingCitaRef.current) return false;
+    if (form.estado === "cancelada" && selectedCita?.estado !== "cancelada") {
+      setError("Anula la cita con la acción correspondiente para registrar el motivo.");
+      return false;
+    }
     savingCitaRef.current = true;
     setError("");
     setSaving(true);
@@ -145,6 +168,14 @@ export function useAgendamiento() {
     } finally {
       savingCitaRef.current = false;
       setSaving(false);
+    }
+  };
+
+  const handleExportCitas = (citasToExport) => {
+    try {
+      exportCitasToExcel(citasToExport);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : "No se pudo exportar la lista de citas.");
     }
   };
 
@@ -167,5 +198,6 @@ export function useAgendamiento() {
     anularCita,
     cambiarEstadoCita,
     handleGuardarCita,
+    handleExportCitas,
   };
 }

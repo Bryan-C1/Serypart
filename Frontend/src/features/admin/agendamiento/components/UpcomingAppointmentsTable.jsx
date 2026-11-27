@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp, Download } from "lucide-react";
 import { EntityStatusSelect } from "../../components/EntityStatusSelect";
 import { estadoLabel, estadoClass, getServicioNombre, getVehiculoNombre, getUsuarioNombre } from "../services/agendamientoData";
 import { getMecanicoNombre } from "../../mecanicos/services/mecanicosService";
@@ -8,10 +9,33 @@ const appointmentStatusOptions = ["programada", "en_proceso", "completada"].map(
   className: estadoClass[estado],
 }));
 
-export function UpcomingAppointmentsTable({ citas, onCitaClick, onChangeStatus }) {
+export function UpcomingAppointmentsTable({
+  citas, onCitaClick, onChangeStatus, sortDirection, onToggleSortDirection, onExport,
+}) {
   return (
     <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-      <h3 className="font-semibold mb-4">Próximas Citas</h3>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="font-semibold">Próximas Citas</h3>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleSortDirection}
+            aria-label={`Cambiar a orden ${sortDirection === "asc" ? "descendente" : "ascendente"} por cliente`}
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors"
+          >
+            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+            {sortDirection === "asc" ? "Cliente: A-Z" : "Cliente: Z-A"}
+          </button>
+          <button
+            type="button"
+            onClick={onExport}
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Exportar Excel
+          </button>
+        </div>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="border-b border-border">

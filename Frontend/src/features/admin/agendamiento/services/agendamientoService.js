@@ -109,6 +109,7 @@ function toApi(cita, servicios) {
     fecha_cita: cita.fecha_cita,
     hora_cita: cita.hora_cita,
     estado: cita.estado,
+    motivo_anulacion: cita.motivo_anulacion || "",
     observaciones: cita.observaciones || "",
     fecha_registro: cita.fecha_registro || fechaRegistro,
   };

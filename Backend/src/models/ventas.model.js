@@ -115,11 +115,16 @@ async function insertServiceItems(connection, saleId, items, previousItems = [])
       };
     } else {
       const [services] = await connection.query(
-        'SELECT nombre, precio FROM servicios WHERE id_servicio = ?',
+        'SELECT nombre, precio, estado FROM servicios WHERE id_servicio = ?',
         [item.id_servicio]
       );
       if (services.length === 0) {
         const error = new Error(`El servicio ${item.id_servicio} no existe.`);
+        error.status = 400;
+        throw error;
+      }
+      if (String(services[0].estado || '').trim().toLowerCase() !== 'activo') {
+        const error = new Error(`El servicio ${item.id_servicio} está inactivo y no se puede agregar a una venta.`);
         error.status = 400;
         throw error;
       }
