@@ -51,13 +51,14 @@ export function FormMecanico({ formData, setFormData }) {
           <input type="email" value={formData.email} onChange={field("email")} className={inputCls} />
         </div>
         <div>
-<<<<<<< HEAD
           <label className="block text-sm font-medium mb-2">Turno</label>
           <SearchableSelect value={formData.turno} onChange={field("turno")} className={inputCls}>
             <option value="Mañana">Mañana</option>
             <option value="Tarde">Tarde</option>
             <option value="Completo">Completo</option>
-=======
+          </SearchableSelect>
+        </div>
+        <div>
           <label className="block text-sm font-medium mb-2">Departamento</label>
           <SearchableSelect value={formData.departamento ?? "Antioquia"} onChange={field("departamento")} className={inputCls}>
             {DEPARTAMENTOS_COLOMBIA.map((departamento) => (
@@ -71,7 +72,6 @@ export function FormMecanico({ formData, setFormData }) {
             {CIUDADES_ANTIOQUIA.map((ciudad) => (
               <option key={ciudad} value={ciudad}>{ciudad}</option>
             ))}
->>>>>>> origin/main
           </SearchableSelect>
         </div>
         {esAntioquia && (

@@ -53,14 +53,6 @@ export default function Registro() {
     const email = values.email.trim();
 
     try {
-<<<<<<< HEAD
-      const telefono = values.telefono.replace(/\D/g, "");
-=======
->>>>>>> origin/main
-      if (telefono.length !== 10) {
-        setError("El teléfono debe tener exactamente 10 dígitos.");
-        return;
-      }
       await apiRequest("/auth/register", {
         method: "POST",
         authenticated: false,
@@ -123,12 +115,8 @@ export default function Registro() {
             label="Teléfono"
             icon={Phone}
             value={values.telefono}
-<<<<<<< HEAD
-            onChange={(e) => handleChange({ target: { name: e.target.name, value: onlyDigits(e.target.value) } })}
-=======
             onChange={(e) => handleChange({ target: { name: e.target.name, value: onlyDigits(e.target.value).slice(0, 10) } })}
             inputMode="numeric"
->>>>>>> origin/main
             pattern="[0-9]{10}"
             maxLength={10}
             placeholder="0412123456"

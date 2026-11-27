@@ -20,13 +20,13 @@ export default function ClientesPage() {
   const [vehiculosError, setVehiculosError] = useState("");
   const [vehiculos, setVehiculos] = useState([]);
   const {
-    searchTerm, filterEstado, showFilters, setShowFilters, sortBy,
+    searchTerm, filterEstado, showFilters, setShowFilters, sortDirection,
     currentPage, setCurrentPage, totalPages, startIndex, endIndex,
     sortedClientes, paginatedClientes, stats,
     loading, error, loadClientes,
     showModal, showDetailModal, showEditModal, showDeleteModal,
     selectedCliente, formData, setFormData,
-    handleSearchChange, handleFilterChange, handleSortChange, clearFilters,
+    handleSearchChange, handleFilterChange, handleSortToggle, clearFilters, handleExportarExcel,
     handleNuevo, handleGuardarNuevo, handleVerDetalles, handleEditar,
     handleGuardarEdicion, handleEliminar, handleConfirmarEliminar,
     handleToggleEstado, closeAll,
@@ -76,10 +76,11 @@ export default function ClientesPage() {
         <SearchFilterBar
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
-          sortBy={sortBy}
-          onSortChange={handleSortChange}
+          sortDirection={sortDirection}
+          onSortToggle={handleSortToggle}
           showFilters={showFilters}
           onToggleFilters={setShowFilters}
+          onExport={handleExportarExcel}
           filterContent={<FilterPanel filterEstado={filterEstado} onFilterChange={handleFilterChange} onSelect={() => setShowFilters(false)} onClear={clearFilters} />}
         />
 

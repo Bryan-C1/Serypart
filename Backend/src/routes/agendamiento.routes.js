@@ -5,6 +5,7 @@ const requireAuth = require('../middlewares/auth.middleware');
 const router = Router();
 
 router.get('/', requireAuth, controller.getAll);
+router.get('/vehiculo/:id/historial', requireAuth, controller.getByVehicleId);
 router.get('/:id', requireAuth, controller.getById);
 router.post('/', requireAuth, controller.create);
 router.put('/:id', requireAuth, controller.update);
